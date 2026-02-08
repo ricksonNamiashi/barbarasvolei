@@ -1,0 +1,166 @@
+import { Phone, Mail, MessageCircle, MapPin, Clock, ExternalLink } from "lucide-react";
+import { motion } from "framer-motion";
+import Header from "@/components/Header";
+import PageTransition from "@/components/PageTransition";
+import logoAbv from "@/assets/logo-abv.jpg";
+
+const contactMethods = [
+  {
+    icon: MessageCircle,
+    label: "WhatsApp",
+    value: "(21) 99999-0000",
+    action: "https://wa.me/5521999990000",
+    color: "bg-green-50 text-green-600",
+  },
+  {
+    icon: Phone,
+    label: "Telefone",
+    value: "(21) 3333-0000",
+    action: "tel:+552133330000",
+    color: "bg-primary/10 text-primary",
+  },
+  {
+    icon: Mail,
+    label: "E-mail",
+    value: "contato@abvvolei.com.br",
+    action: "mailto:contato@abvvolei.com.br",
+    color: "bg-accent/10 text-accent-foreground",
+  },
+];
+
+const Contato = () => {
+  return (
+    <PageTransition>
+      <Header title="Contato" subtitle="Fale conosco" />
+
+      <main className="space-y-5 px-4 pb-24 pt-4">
+        {/* School Info */}
+        <motion.div
+          initial={{ opacity: 0, y: 15 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="flex items-center gap-4 rounded-2xl border border-border bg-card p-4 shadow-card"
+        >
+          <img
+            src={logoAbv}
+            alt="ABV"
+            className="h-16 w-16 rounded-xl object-cover shadow-card"
+          />
+          <div>
+            <h2 className="font-display text-lg font-bold text-card-foreground">
+              ABV Escola de Vôlei
+            </h2>
+            <p className="text-xs text-muted-foreground">
+              Academia de Vôlei dos Vikings
+            </p>
+          </div>
+        </motion.div>
+
+        {/* Contact Methods */}
+        <section>
+          <h3 className="mb-3 font-display text-sm font-bold text-foreground">
+            Canais de Atendimento
+          </h3>
+          <div className="space-y-2">
+            {contactMethods.map((method, i) => {
+              const Icon = method.icon;
+              return (
+                <motion.a
+                  key={method.label}
+                  href={method.action}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  initial={{ opacity: 0, x: -15 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: i * 0.1 }}
+                  className="flex items-center gap-3 rounded-xl border border-border bg-card p-4 shadow-card transition-transform active:scale-[0.98]"
+                >
+                  <div
+                    className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${method.color}`}
+                  >
+                    <Icon size={20} />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-semibold text-card-foreground">
+                      {method.label}
+                    </p>
+                    <p className="truncate text-xs text-muted-foreground">
+                      {method.value}
+                    </p>
+                  </div>
+                  <ExternalLink size={16} className="text-muted-foreground" />
+                </motion.a>
+              );
+            })}
+          </div>
+        </section>
+
+        {/* Address */}
+        <section>
+          <h3 className="mb-3 font-display text-sm font-bold text-foreground">
+            Localização
+          </h3>
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 }}
+            className="rounded-xl border border-border bg-card p-4 shadow-card"
+          >
+            <div className="flex items-start gap-3">
+              <MapPin size={18} className="mt-0.5 shrink-0 text-primary" />
+              <div>
+                <p className="text-sm font-semibold text-card-foreground">
+                  Ginásio Esportivo ABV
+                </p>
+                <p className="mt-0.5 text-xs text-muted-foreground">
+                  Rua do Vôlei, 123 - Barra da Tijuca
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  Rio de Janeiro - RJ, 22000-000
+                </p>
+              </div>
+            </div>
+          </motion.div>
+        </section>
+
+        {/* Hours */}
+        <section>
+          <h3 className="mb-3 font-display text-sm font-bold text-foreground">
+            Horário de Funcionamento
+          </h3>
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.4 }}
+            className="rounded-xl border border-border bg-card p-4 shadow-card"
+          >
+            <div className="flex items-start gap-3">
+              <Clock size={18} className="mt-0.5 shrink-0 text-primary" />
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between gap-8">
+                  <span className="text-xs text-muted-foreground">Seg - Sex</span>
+                  <span className="text-xs font-semibold text-card-foreground">
+                    07:00 - 21:00
+                  </span>
+                </div>
+                <div className="flex items-center justify-between gap-8">
+                  <span className="text-xs text-muted-foreground">Sábado</span>
+                  <span className="text-xs font-semibold text-card-foreground">
+                    08:00 - 12:00
+                  </span>
+                </div>
+                <div className="flex items-center justify-between gap-8">
+                  <span className="text-xs text-muted-foreground">Domingo</span>
+                  <span className="text-xs font-semibold text-card-foreground">
+                    Fechado
+                  </span>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        </section>
+      </main>
+    </PageTransition>
+  );
+};
+
+export default Contato;

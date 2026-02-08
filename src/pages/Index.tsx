@@ -1,13 +1,167 @@
-// Update this page (the content is just a fallback if you fail to update the page)
+import { Calendar, Users, Bell, CreditCard, Trophy, ArrowRight } from "lucide-react";
+import { motion } from "framer-motion";
+import { useNavigate } from "react-router-dom";
+import Header from "@/components/Header";
+import QuickActionCard from "@/components/QuickActionCard";
+import PageTransition from "@/components/PageTransition";
+import logoAbv from "@/assets/logo-abv.jpg";
+
+const upcomingTrainings = [
+  { day: "Seg", date: "10", time: "17:00 - 18:30", category: "Sub-15" },
+  { day: "Qua", date: "12", time: "17:00 - 18:30", category: "Sub-15" },
+  { day: "Sex", date: "14", time: "16:00 - 17:30", category: "Sub-13" },
+];
+
+const latestNotice = {
+  title: "⚡ Treino cancelado dia 15/02",
+  description: "Devido à manutenção do ginásio, o treino de sábado será cancelado.",
+  date: "08 Fev 2026",
+};
 
 const Index = () => {
+  const navigate = useNavigate();
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background">
-      <div className="text-center">
-        <h1 className="mb-4 text-4xl font-bold">Welcome to Your Blank App</h1>
-        <p className="text-xl text-muted-foreground">Start building your amazing project here!</p>
-      </div>
-    </div>
+    <PageTransition>
+      <Header title="ABV Vôlei" subtitle="Escola de Vôlei" />
+
+      <main className="space-y-6 px-4 pb-24 pt-4">
+        {/* Hero Banner */}
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.5 }}
+          className="relative overflow-hidden rounded-2xl gradient-hero p-5"
+        >
+          <div className="relative z-10 flex items-center gap-4">
+            <img
+              src={logoAbv}
+              alt="ABV"
+              className="h-16 w-16 rounded-xl border-2 border-primary-foreground/30 object-cover shadow-elevated"
+            />
+            <div>
+              <h2 className="font-display text-xl font-bold text-primary-foreground">
+                Bem-vindo ao ABV!
+              </h2>
+              <p className="mt-0.5 text-sm text-primary-foreground/80">
+                Academia de Vôlei dos Vikings
+              </p>
+            </div>
+          </div>
+          <div className="absolute -right-4 -top-4 h-24 w-24 rounded-full bg-primary-foreground/10" />
+          <div className="absolute -bottom-6 -right-6 h-32 w-32 rounded-full bg-primary-foreground/5" />
+        </motion.div>
+
+        {/* Quick Actions */}
+        <section>
+          <h3 className="mb-3 font-display text-base font-bold text-foreground">
+            Acesso Rápido
+          </h3>
+          <div className="grid grid-cols-2 gap-3">
+            <QuickActionCard
+              icon={Calendar}
+              label="Agenda"
+              description="Horários de treino"
+              to="/agenda"
+              variant="primary"
+              index={0}
+            />
+            <QuickActionCard
+              icon={Bell}
+              label="Avisos"
+              description="Comunicados"
+              to="/avisos"
+              variant="secondary"
+              index={1}
+            />
+            <QuickActionCard
+              icon={Users}
+              label="Professores"
+              description="Nossa equipe"
+              to="/professores"
+              variant="secondary"
+              index={2}
+            />
+            <QuickActionCard
+              icon={CreditCard}
+              label="Pagamentos"
+              description="Mensalidades"
+              to="/pagamentos"
+              variant="accent"
+              index={3}
+            />
+          </div>
+        </section>
+
+        {/* Upcoming Trainings */}
+        <section>
+          <div className="mb-3 flex items-center justify-between">
+            <h3 className="font-display text-base font-bold text-foreground">
+              Próximos Treinos
+            </h3>
+            <button
+              onClick={() => navigate("/agenda")}
+              className="flex items-center gap-1 text-xs font-medium text-primary"
+            >
+              Ver todos <ArrowRight size={14} />
+            </button>
+          </div>
+          <div className="space-y-2">
+            {upcomingTrainings.map((training, i) => (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.3 + i * 0.1 }}
+                className="flex items-center gap-3 rounded-xl border border-border bg-card p-3 shadow-card"
+              >
+                <div className="flex h-12 w-12 flex-col items-center justify-center rounded-lg bg-primary/10">
+                  <span className="text-[10px] font-medium uppercase text-primary">
+                    {training.day}
+                  </span>
+                  <span className="font-display text-lg font-bold leading-none text-primary">
+                    {training.date}
+                  </span>
+                </div>
+                <div className="flex-1">
+                  <p className="text-sm font-semibold text-card-foreground">
+                    {training.time}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {training.category}
+                  </p>
+                </div>
+                <Trophy size={16} className="text-accent" />
+              </motion.div>
+            ))}
+          </div>
+        </section>
+
+        {/* Latest Notice */}
+        <section>
+          <h3 className="mb-3 font-display text-base font-bold text-foreground">
+            Último Aviso
+          </h3>
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.5 }}
+            onClick={() => navigate("/avisos")}
+            className="cursor-pointer rounded-xl border border-destructive/20 bg-destructive/5 p-4 transition-transform active:scale-[0.98]"
+          >
+            <p className="text-sm font-semibold text-foreground">
+              {latestNotice.title}
+            </p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              {latestNotice.description}
+            </p>
+            <p className="mt-2 text-[10px] font-medium text-muted-foreground">
+              {latestNotice.date}
+            </p>
+          </motion.div>
+        </section>
+      </main>
+    </PageTransition>
   );
 };
 
