@@ -10,6 +10,7 @@ import Professores from "./pages/Professores";
 import Avisos from "./pages/Avisos";
 import Pagamentos from "./pages/Pagamentos";
 import Contato from "./pages/Contato";
+import Perfil from "./pages/Perfil";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -28,6 +29,7 @@ const App = () => (
             <Route path="/avisos" element={<Avisos />} />
             <Route path="/pagamentos" element={<Pagamentos />} />
             <Route path="/contato" element={<Contato />} />
+            <Route path="/perfil" element={<Perfil />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
           <BottomNav />
