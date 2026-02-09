@@ -11,6 +11,10 @@ import Avisos from "./pages/Avisos";
 import Pagamentos from "./pages/Pagamentos";
 import Contato from "./pages/Contato";
 import Perfil from "./pages/Perfil";
+import AdminDashboard from "./pages/admin/AdminDashboard";
+import AdminHorarios from "./pages/admin/AdminHorarios";
+import AdminAvisos from "./pages/admin/AdminAvisos";
+import AdminAlunos from "./pages/admin/AdminAlunos";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -30,6 +34,10 @@ const App = () => (
             <Route path="/pagamentos" element={<Pagamentos />} />
             <Route path="/contato" element={<Contato />} />
             <Route path="/perfil" element={<Perfil />} />
+            <Route path="/admin" element={<AdminDashboard />} />
+            <Route path="/admin/horarios" element={<AdminHorarios />} />
+            <Route path="/admin/avisos" element={<AdminAvisos />} />
+            <Route path="/admin/alunos" element={<AdminAlunos />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
           <BottomNav />

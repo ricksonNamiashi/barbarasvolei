@@ -1,4 +1,4 @@
-import { Calendar, Users, Bell, CreditCard, Trophy, ArrowRight } from "lucide-react";
+import { Calendar, Users, Bell, CreditCard, Trophy, ArrowRight, Settings } from "lucide-react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import Header from "@/components/Header";
@@ -156,10 +156,22 @@ const Index = () => {
               {latestNotice.description}
             </p>
             <p className="mt-2 text-[10px] font-medium text-muted-foreground">
-              {latestNotice.date}
+            {latestNotice.date}
             </p>
           </motion.div>
         </section>
+
+        {/* Admin Access */}
+        <motion.button
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.6 }}
+          onClick={() => navigate("/admin")}
+          className="flex w-full items-center justify-center gap-2 rounded-xl border border-border bg-card p-3 text-sm font-medium text-muted-foreground transition-colors active:bg-muted"
+        >
+          <Settings size={16} />
+          Painel Administrativo
+        </motion.button>
       </main>
     </PageTransition>
   );
