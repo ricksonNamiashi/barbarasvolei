@@ -3,6 +3,8 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
+import { AuthProvider } from "@/contexts/AuthContext";
+import ProtectedRoute from "@/components/ProtectedRoute";
 import BottomNav from "@/components/BottomNav";
 import Index from "./pages/Index";
 import Agenda from "./pages/Agenda";
@@ -11,6 +13,7 @@ import Avisos from "./pages/Avisos";
 import Pagamentos from "./pages/Pagamentos";
 import Contato from "./pages/Contato";
 import Perfil from "./pages/Perfil";
+import Auth from "./pages/Auth";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminHorarios from "./pages/admin/AdminHorarios";
 import AdminAvisos from "./pages/admin/AdminAvisos";
@@ -22,24 +25,26 @@ const queryClient = new QueryClient();
 const AppContent = () => {
   const location = useLocation();
   const isAdmin = location.pathname.startsWith("/admin");
+  const isAuth = location.pathname === "/auth";
 
   return (
     <div className="mx-auto min-h-screen max-w-md bg-background">
       <Routes>
-        <Route path="/" element={<Index />} />
-        <Route path="/agenda" element={<Agenda />} />
-        <Route path="/professores" element={<Professores />} />
-        <Route path="/avisos" element={<Avisos />} />
-        <Route path="/pagamentos" element={<Pagamentos />} />
-        <Route path="/contato" element={<Contato />} />
-        <Route path="/perfil" element={<Perfil />} />
-        <Route path="/admin" element={<AdminDashboard />} />
-        <Route path="/admin/horarios" element={<AdminHorarios />} />
-        <Route path="/admin/avisos" element={<AdminAvisos />} />
-        <Route path="/admin/alunos" element={<AdminAlunos />} />
+        <Route path="/auth" element={<Auth />} />
+        <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
+        <Route path="/agenda" element={<ProtectedRoute><Agenda /></ProtectedRoute>} />
+        <Route path="/professores" element={<ProtectedRoute><Professores /></ProtectedRoute>} />
+        <Route path="/avisos" element={<ProtectedRoute><Avisos /></ProtectedRoute>} />
+        <Route path="/pagamentos" element={<ProtectedRoute><Pagamentos /></ProtectedRoute>} />
+        <Route path="/contato" element={<ProtectedRoute><Contato /></ProtectedRoute>} />
+        <Route path="/perfil" element={<ProtectedRoute><Perfil /></ProtectedRoute>} />
+        <Route path="/admin" element={<ProtectedRoute requiredRole="admin"><AdminDashboard /></ProtectedRoute>} />
+        <Route path="/admin/horarios" element={<ProtectedRoute requiredRole="admin"><AdminHorarios /></ProtectedRoute>} />
+        <Route path="/admin/avisos" element={<ProtectedRoute requiredRole="admin"><AdminAvisos /></ProtectedRoute>} />
+        <Route path="/admin/alunos" element={<ProtectedRoute requiredRole="admin"><AdminAlunos /></ProtectedRoute>} />
         <Route path="*" element={<NotFound />} />
       </Routes>
-      {!isAdmin && <BottomNav />}
+      {!isAdmin && !isAuth && <BottomNav />}
     </div>
   );
 };
@@ -50,7 +55,9 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
-        <AppContent />
+        <AuthProvider>
+          <AppContent />
+        </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>
