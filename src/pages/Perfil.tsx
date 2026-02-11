@@ -1,17 +1,17 @@
-import { User, Calendar, Trophy, Clock, ArrowLeft } from "lucide-react";
+import { User, Calendar, Trophy, Clock, LogOut } from "lucide-react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import Header from "@/components/Header";
 import PageTransition from "@/components/PageTransition";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import { useAuth } from "@/contexts/AuthContext";
+import { Button } from "@/components/ui/button";
 
-const studentData = {
-  name: "Lucas Martins",
-  age: 14,
-  category: "Sub-15",
-  enrolledSince: "Mar 2025",
-  nextTraining: "Seg, 10 Fev - 17:00",
+const roleLabels: Record<string, string> = {
+  admin: "Administrador",
+  responsavel: "Responsável",
+  aluno: "Aluno",
 };
 
 const trainingHistory = [
@@ -25,10 +25,14 @@ const trainingHistory = [
 
 const Perfil = () => {
   const navigate = useNavigate();
+  const { profile, role, user, signOut } = useAuth();
+
+  const displayName = profile?.name || user?.email || "Usuário";
+  const initials = displayName.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase();
 
   return (
     <PageTransition>
-      <Header title="Perfil do Aluno" subtitle="Informações e histórico" />
+      <Header title="Meu Perfil" />
 
       <main className="space-y-6 px-4 pb-24 pt-4">
         {/* Student Card */}
@@ -39,18 +43,27 @@ const Perfil = () => {
         >
           <Avatar className="h-20 w-20">
             <AvatarFallback className="bg-primary/10 text-2xl font-bold text-primary">
-              {studentData.name.split(" ").map((n) => n[0]).join("")}
+              {initials}
             </AvatarFallback>
           </Avatar>
           <div className="text-center">
             <h2 className="font-display text-xl font-bold text-foreground">
-              {studentData.name}
+              {displayName}
             </h2>
             <p className="text-sm text-muted-foreground">
-              {studentData.age} anos
+              {user?.email}
             </p>
           </div>
-          <Badge variant="default">{studentData.category}</Badge>
+          {role && <Badge variant="default">{roleLabels[role] || role}</Badge>}
+          <Button
+            variant="outline"
+            size="sm"
+            className="mt-2 gap-2 text-destructive"
+            onClick={async () => { await signOut(); navigate("/auth"); }}
+          >
+            <LogOut size={16} />
+            Sair da conta
+          </Button>
         </motion.div>
 
         {/* Info Cards */}
@@ -66,7 +79,7 @@ const Perfil = () => {
               Matrícula
             </span>
             <span className="text-sm font-bold text-foreground">
-              {studentData.enrolledSince}
+              {user?.created_at ? new Date(user.created_at).toLocaleDateString("pt-BR", { month: "short", year: "numeric" }) : "—"}
             </span>
           </motion.div>
           <motion.div
@@ -80,7 +93,7 @@ const Perfil = () => {
               Próximo treino
             </span>
             <span className="text-center text-xs font-bold text-foreground">
-              {studentData.nextTraining}
+              Em breve
             </span>
           </motion.div>
         </div>
