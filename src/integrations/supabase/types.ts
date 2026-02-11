@@ -14,6 +14,63 @@ export type Database = {
   }
   public: {
     Tables: {
+      notices: {
+        Row: {
+          created_at: string
+          description: string
+          id: string
+          title: string
+          type: string
+        }
+        Insert: {
+          created_at?: string
+          description: string
+          id?: string
+          title: string
+          type?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          id?: string
+          title?: string
+          type?: string
+        }
+        Relationships: []
+      }
+      payments: {
+        Row: {
+          amount: number
+          created_at: string
+          due_date: string
+          id: string
+          month: string
+          paid_date: string | null
+          status: string
+          user_id: string
+        }
+        Insert: {
+          amount?: number
+          created_at?: string
+          due_date: string
+          id?: string
+          month: string
+          paid_date?: string | null
+          status?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          due_date?: string
+          id?: string
+          month?: string
+          paid_date?: string | null
+          status?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
@@ -32,6 +89,66 @@ export type Database = {
           id?: string
           name?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      schedules: {
+        Row: {
+          category: string
+          coach: string | null
+          created_at: string
+          day: string
+          id: string
+          location: string
+          time: string
+        }
+        Insert: {
+          category: string
+          coach?: string | null
+          created_at?: string
+          day: string
+          id?: string
+          location: string
+          time: string
+        }
+        Update: {
+          category?: string
+          coach?: string | null
+          created_at?: string
+          day?: string
+          id?: string
+          location?: string
+          time?: string
+        }
+        Relationships: []
+      }
+      students: {
+        Row: {
+          age: number
+          category: string
+          created_at: string
+          id: string
+          name: string
+          responsible: string
+          status: string
+        }
+        Insert: {
+          age: number
+          category: string
+          created_at?: string
+          id?: string
+          name: string
+          responsible: string
+          status?: string
+        }
+        Update: {
+          age?: number
+          category?: string
+          created_at?: string
+          id?: string
+          name?: string
+          responsible?: string
+          status?: string
         }
         Relationships: []
       }
