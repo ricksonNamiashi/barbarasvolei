@@ -2,53 +2,22 @@ import { Clock, MapPin } from "lucide-react";
 import { motion } from "framer-motion";
 import Header from "@/components/Header";
 import PageTransition from "@/components/PageTransition";
+import { useSchedules } from "@/hooks/use-schedules";
 
 const weekDays = ["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
-
-const schedule = [
-  {
-    day: "Segunda",
-    sessions: [
-      { time: "08:00 - 09:30", category: "Sub-11", location: "Ginásio A", coach: "Prof. Ricardo" },
-      { time: "17:00 - 18:30", category: "Sub-15", location: "Ginásio A", coach: "Prof. Carla" },
-    ],
-  },
-  {
-    day: "Terça",
-    sessions: [
-      { time: "14:00 - 15:30", category: "Sub-13", location: "Ginásio B", coach: "Prof. André" },
-    ],
-  },
-  {
-    day: "Quarta",
-    sessions: [
-      { time: "08:00 - 09:30", category: "Sub-11", location: "Ginásio A", coach: "Prof. Ricardo" },
-      { time: "17:00 - 18:30", category: "Sub-15", location: "Ginásio A", coach: "Prof. Carla" },
-      { time: "19:00 - 20:30", category: "Adulto", location: "Ginásio B", coach: "Prof. André" },
-    ],
-  },
-  {
-    day: "Quinta",
-    sessions: [
-      { time: "14:00 - 15:30", category: "Sub-13", location: "Ginásio B", coach: "Prof. André" },
-    ],
-  },
-  {
-    day: "Sexta",
-    sessions: [
-      { time: "08:00 - 09:30", category: "Sub-11", location: "Ginásio A", coach: "Prof. Ricardo" },
-      { time: "16:00 - 17:30", category: "Sub-13", location: "Ginásio A", coach: "Prof. Carla" },
-    ],
-  },
-  {
-    day: "Sábado",
-    sessions: [
-      { time: "09:00 - 11:00", category: "Todos", location: "Ginásio A", coach: "Todos os Professores" },
-    ],
-  },
-];
+const dayOrder = ["Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado"];
 
 const Agenda = () => {
+  const { data: schedules, isLoading } = useSchedules();
+
+  // Group by day
+  const grouped = dayOrder
+    .map((day) => ({
+      day,
+      sessions: (schedules || []).filter((s) => s.day === day),
+    }))
+    .filter((g) => g.sessions.length > 0);
+
   return (
     <PageTransition>
       <Header title="Agenda" subtitle="Horários de treino" />
@@ -71,8 +40,10 @@ const Agenda = () => {
           ))}
         </div>
 
+        {isLoading && <p className="py-8 text-center text-sm text-muted-foreground">Carregando...</p>}
+
         {/* Schedule */}
-        {schedule.map((daySchedule, dayIndex) => (
+        {grouped.map((daySchedule, dayIndex) => (
           <motion.section
             key={daySchedule.day}
             initial={{ opacity: 0, y: 15 }}
@@ -83,9 +54,9 @@ const Agenda = () => {
               {daySchedule.day}
             </h3>
             <div className="space-y-2">
-              {daySchedule.sessions.map((session, sessionIndex) => (
+              {daySchedule.sessions.map((session) => (
                 <div
-                  key={sessionIndex}
+                  key={session.id}
                   className="flex items-start gap-3 rounded-xl border border-border bg-card p-3 shadow-card"
                 >
                   <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10">
@@ -100,9 +71,11 @@ const Agenda = () => {
                         {session.category}
                       </span>
                     </div>
-                    <p className="mt-1 text-xs text-muted-foreground">
-                      {session.coach}
-                    </p>
+                    {session.coach && (
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        {session.coach}
+                      </p>
+                    )}
                     <div className="mt-1 flex items-center gap-1 text-[10px] text-muted-foreground">
                       <MapPin size={10} />
                       {session.location}

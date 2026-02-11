@@ -11,73 +11,56 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogClose } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-
-interface Notice {
-  id: number;
-  title: string;
-  description: string;
-  type: string;
-  date: string;
-}
+import { useNotices, useCreateNotice, useUpdateNotice, useDeleteNotice, type Notice } from "@/hooks/use-notices";
 
 const typeColors: Record<string, "default" | "destructive" | "secondary" | "outline"> = {
-  Urgente: "destructive",
-  Informativo: "default",
-  Evento: "secondary",
-  Geral: "outline",
+  urgent: "destructive",
+  info: "default",
+  event: "secondary",
+  general: "outline",
 };
-
-const initialNotices: Notice[] = [
-  { id: 1, title: "Treino cancelado dia 15/02", description: "Manutenção do ginásio.", type: "Urgente", date: "08 Fev 2026" },
-  { id: 2, title: "Campeonato Regional", description: "Inscrições abertas até 20/02.", type: "Evento", date: "06 Fev 2026" },
-  { id: 3, title: "Novo uniforme disponível", description: "Retirar na secretaria.", type: "Informativo", date: "04 Fev 2026" },
-];
-
-const types = ["Urgente", "Informativo", "Evento", "Geral"];
+const typeLabels: Record<string, string> = { urgent: "Urgente", info: "Informativo", event: "Evento", general: "Geral" };
+const types = ["urgent", "info", "event", "general"];
 
 const AdminAvisos = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [notices, setNotices] = useState<Notice[]>(initialNotices);
+  const { data: notices = [], isLoading } = useNotices();
+  const createMutation = useCreateNotice();
+  const updateMutation = useUpdateNotice();
+  const deleteMutation = useDeleteNotice();
+
   const [editItem, setEditItem] = useState<Notice | null>(null);
   const [formOpen, setFormOpen] = useState(false);
-
   const [formTitle, setFormTitle] = useState("");
   const [formDesc, setFormDesc] = useState("");
   const [formType, setFormType] = useState("");
 
   const resetForm = () => { setFormTitle(""); setFormDesc(""); setFormType(""); setEditItem(null); };
-
   const openNew = () => { resetForm(); setFormOpen(true); };
+  const openEdit = (n: Notice) => { setEditItem(n); setFormTitle(n.title); setFormDesc(n.description); setFormType(n.type); setFormOpen(true); };
 
-  const openEdit = (n: Notice) => {
-    setEditItem(n);
-    setFormTitle(n.title);
-    setFormDesc(n.description);
-    setFormType(n.type);
-    setFormOpen(true);
-  };
-
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!formTitle || !formDesc || !formType) {
-      toast({ title: "Preencha todos os campos", variant: "destructive" });
-      return;
+      toast({ title: "Preencha todos os campos", variant: "destructive" }); return;
     }
-    const today = new Date().toLocaleDateString("pt-BR", { day: "2-digit", month: "short", year: "numeric" });
-    if (editItem) {
-      setNotices((prev) => prev.map((n) => n.id === editItem.id ? { ...n, title: formTitle, description: formDesc, type: formType } : n));
-      toast({ title: "Aviso atualizado!" });
-    } else {
-      setNotices((prev) => [{ id: Date.now(), title: formTitle, description: formDesc, type: formType, date: today }, ...prev]);
-      toast({ title: "Aviso criado!" });
-    }
-    setFormOpen(false);
-    resetForm();
+    try {
+      if (editItem) {
+        await updateMutation.mutateAsync({ id: editItem.id, title: formTitle, description: formDesc, type: formType });
+        toast({ title: "Aviso atualizado!" });
+      } else {
+        await createMutation.mutateAsync({ title: formTitle, description: formDesc, type: formType });
+        toast({ title: "Aviso criado!" });
+      }
+      setFormOpen(false); resetForm();
+    } catch { toast({ title: "Erro ao salvar", variant: "destructive" }); }
   };
 
-  const handleDelete = (id: number) => {
-    setNotices((prev) => prev.filter((n) => n.id !== id));
-    toast({ title: "Aviso removido" });
+  const handleDelete = async (id: string) => {
+    try {
+      await deleteMutation.mutateAsync(id);
+      toast({ title: "Aviso removido" });
+    } catch { toast({ title: "Erro ao remover", variant: "destructive" }); }
   };
 
   return (
@@ -94,9 +77,7 @@ const AdminAvisos = () => {
               <Button size="sm" onClick={openNew} className="gap-1"><Plus size={16} /> Novo</Button>
             </DialogTrigger>
             <DialogContent className="max-w-[360px]">
-              <DialogHeader>
-                <DialogTitle>{editItem ? "Editar Aviso" : "Novo Aviso"}</DialogTitle>
-              </DialogHeader>
+              <DialogHeader><DialogTitle>{editItem ? "Editar Aviso" : "Novo Aviso"}</DialogTitle></DialogHeader>
               <div className="space-y-4 py-2">
                 <div className="space-y-2">
                   <Label>Título</Label>
@@ -110,7 +91,7 @@ const AdminAvisos = () => {
                   <Label>Tipo</Label>
                   <Select value={formType} onValueChange={setFormType}>
                     <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
-                    <SelectContent>{types.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
+                    <SelectContent>{types.map((t) => <SelectItem key={t} value={t}>{typeLabels[t]}</SelectItem>)}</SelectContent>
                   </Select>
                 </div>
               </div>
@@ -124,25 +105,19 @@ const AdminAvisos = () => {
       </header>
 
       <main className="space-y-2 px-4 pb-24 pt-4">
+        {isLoading && <p className="py-8 text-center text-sm text-muted-foreground">Carregando...</p>}
         <AnimatePresence>
           {notices.map((n, i) => (
-            <motion.div
-              key={n.id}
-              initial={{ opacity: 0, x: -10 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: 10 }}
-              transition={{ delay: i * 0.04 }}
-              className="flex items-start gap-3 rounded-xl border border-border bg-card p-3 shadow-card"
-            >
-              <div className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10">
-                <Bell size={18} className="text-primary" />
-              </div>
+            <motion.div key={n.id} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 10 }} transition={{ delay: i * 0.04 }} className="flex items-start gap-3 rounded-xl border border-border bg-card p-3 shadow-card">
+              <div className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10"><Bell size={18} className="text-primary" /></div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-semibold text-card-foreground truncate">{n.title}</p>
                 <p className="text-xs text-muted-foreground line-clamp-1">{n.description}</p>
                 <div className="mt-1 flex items-center gap-2">
-                  <Badge variant={typeColors[n.type] || "outline"} className="text-[10px]">{n.type}</Badge>
-                  <span className="text-[10px] text-muted-foreground">{n.date}</span>
+                  <Badge variant={typeColors[n.type] || "outline"} className="text-[10px]">{typeLabels[n.type] || n.type}</Badge>
+                  <span className="text-[10px] text-muted-foreground">
+                    {new Date(n.created_at).toLocaleDateString("pt-BR", { day: "2-digit", month: "short", year: "numeric" })}
+                  </span>
                 </div>
               </div>
               <div className="flex shrink-0 gap-1">
