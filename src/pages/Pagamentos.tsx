@@ -1,26 +1,12 @@
-import { CheckCircle2, Clock, AlertCircle, CreditCard, QrCode } from "lucide-react";
+import { CheckCircle2, Clock, AlertCircle, CreditCard, QrCode, Loader2 } from "lucide-react";
 import { motion } from "framer-motion";
 import Header from "@/components/Header";
 import PageTransition from "@/components/PageTransition";
+import { usePayments } from "@/hooks/use-payments";
+import { format, parseISO } from "date-fns";
+import { ptBR } from "date-fns/locale";
 
 type PaymentStatus = "paid" | "pending" | "overdue";
-
-interface Payment {
-  id: number;
-  month: string;
-  amount: string;
-  dueDate: string;
-  status: PaymentStatus;
-  paidDate?: string;
-}
-
-const payments: Payment[] = [
-  { id: 1, month: "Fevereiro 2026", amount: "R$ 250,00", dueDate: "10/02/2026", status: "pending" },
-  { id: 2, month: "Janeiro 2026", amount: "R$ 250,00", dueDate: "10/01/2026", status: "paid", paidDate: "08/01/2026" },
-  { id: 3, month: "Dezembro 2025", amount: "R$ 250,00", dueDate: "10/12/2025", status: "paid", paidDate: "09/12/2025" },
-  { id: 4, month: "Novembro 2025", amount: "R$ 250,00", dueDate: "10/11/2025", status: "paid", paidDate: "10/11/2025" },
-  { id: 5, month: "Outubro 2025", amount: "R$ 250,00", dueDate: "10/10/2025", status: "paid", paidDate: "07/10/2025" },
-];
 
 const statusConfig: Record<PaymentStatus, { icon: typeof CheckCircle2; label: string; color: string; bg: string }> = {
   paid: {
@@ -43,8 +29,22 @@ const statusConfig: Record<PaymentStatus, { icon: typeof CheckCircle2; label: st
   },
 };
 
+const formatDate = (dateStr: string) => {
+  try {
+    return format(parseISO(dateStr), "dd/MM/yyyy");
+  } catch {
+    return dateStr;
+  }
+};
+
+const formatCurrency = (amount: number) =>
+  new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(amount);
+
 const Pagamentos = () => {
+  const { data: payments = [], isLoading } = usePayments();
+
   const totalPending = payments.filter((p) => p.status === "pending").length;
+  const currentAmount = payments.length > 0 ? payments[0].amount : 250;
 
   return (
     <PageTransition>
@@ -61,7 +61,7 @@ const Pagamentos = () => {
             <div>
               <p className="text-sm text-primary-foreground/80">Mensalidade Atual</p>
               <p className="mt-1 font-display text-3xl font-bold text-primary-foreground">
-                R$ 250,00
+                {formatCurrency(currentAmount)}
               </p>
               <p className="mt-1 text-xs text-primary-foreground/70">
                 {totalPending} pagamento(s) pendente(s)
@@ -101,49 +101,61 @@ const Pagamentos = () => {
           <h3 className="mb-3 font-display text-sm font-bold text-foreground">
             Histórico
           </h3>
-          <div className="space-y-2">
-            {payments.map((payment, i) => {
-              const config = statusConfig[payment.status];
-              const Icon = config.icon;
 
-              return (
-                <motion.div
-                  key={payment.id}
-                  initial={{ opacity: 0, x: -15 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.2 + i * 0.08 }}
-                  className="flex items-center gap-3 rounded-xl border border-border bg-card p-3 shadow-card"
-                >
-                  <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${config.bg}`}>
-                    <Icon size={18} className={config.color} />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm font-semibold text-card-foreground">
-                      {payment.month}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      Vencimento: {payment.dueDate}
-                    </p>
-                    {payment.paidDate && (
-                      <p className="text-[10px] text-muted-foreground">
-                        Pago em: {payment.paidDate}
+          {isLoading ? (
+            <div className="flex justify-center py-8">
+              <Loader2 className="h-6 w-6 animate-spin text-primary" />
+            </div>
+          ) : payments.length === 0 ? (
+            <p className="text-center text-sm text-muted-foreground py-8">
+              Nenhum pagamento encontrado.
+            </p>
+          ) : (
+            <div className="space-y-2">
+              {payments.map((payment, i) => {
+                const status = (payment.status as PaymentStatus) || "pending";
+                const config = statusConfig[status] ?? statusConfig.pending;
+                const Icon = config.icon;
+
+                return (
+                  <motion.div
+                    key={payment.id}
+                    initial={{ opacity: 0, x: -15 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.2 + i * 0.08 }}
+                    className="flex items-center gap-3 rounded-xl border border-border bg-card p-3 shadow-card"
+                  >
+                    <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${config.bg}`}>
+                      <Icon size={18} className={config.color} />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-semibold text-card-foreground">
+                        {payment.month}
                       </p>
-                    )}
-                  </div>
-                  <div className="text-right">
-                    <p className="text-sm font-bold text-card-foreground">
-                      {payment.amount}
-                    </p>
-                    <span
-                      className={`inline-block rounded-full px-2 py-0.5 text-[10px] font-semibold ${config.bg} ${config.color}`}
-                    >
-                      {config.label}
-                    </span>
-                  </div>
-                </motion.div>
-              );
-            })}
-          </div>
+                      <p className="text-xs text-muted-foreground">
+                        Vencimento: {formatDate(payment.due_date)}
+                      </p>
+                      {payment.paid_date && (
+                        <p className="text-[10px] text-muted-foreground">
+                          Pago em: {formatDate(payment.paid_date)}
+                        </p>
+                      )}
+                    </div>
+                    <div className="text-right">
+                      <p className="text-sm font-bold text-card-foreground">
+                        {formatCurrency(payment.amount)}
+                      </p>
+                      <span
+                        className={`inline-block rounded-full px-2 py-0.5 text-[10px] font-semibold ${config.bg} ${config.color}`}
+                      >
+                        {config.label}
+                      </span>
+                    </div>
+                  </motion.div>
+                );
+              })}
+            </div>
+          )}
         </section>
       </main>
     </PageTransition>
