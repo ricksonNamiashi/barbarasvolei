@@ -18,6 +18,7 @@ import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminHorarios from "./pages/admin/AdminHorarios";
 import AdminAvisos from "./pages/admin/AdminAvisos";
 import AdminAlunos from "./pages/admin/AdminAlunos";
+import AdminPagamentos from "./pages/admin/AdminPagamentos";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -42,6 +43,7 @@ const AppContent = () => {
         <Route path="/admin/horarios" element={<ProtectedRoute requiredRole="admin"><AdminHorarios /></ProtectedRoute>} />
         <Route path="/admin/avisos" element={<ProtectedRoute requiredRole="admin"><AdminAvisos /></ProtectedRoute>} />
         <Route path="/admin/alunos" element={<ProtectedRoute requiredRole="admin"><AdminAlunos /></ProtectedRoute>} />
+        <Route path="/admin/pagamentos" element={<ProtectedRoute requiredRole="admin"><AdminPagamentos /></ProtectedRoute>} />
         <Route path="*" element={<NotFound />} />
       </Routes>
       {!isAdmin && !isAuth && <BottomNav />}

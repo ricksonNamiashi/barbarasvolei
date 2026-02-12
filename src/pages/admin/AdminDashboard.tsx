@@ -29,6 +29,12 @@ const menuItems = [
     icon: Users,
     to: "/admin/alunos",
   },
+  {
+    label: "Gerenciar Pagamentos",
+    description: "Mensalidades e cobranças",
+    icon: CreditCard,
+    to: "/admin/pagamentos",
+  },
 ];
 
 const AdminDashboard = () => {
