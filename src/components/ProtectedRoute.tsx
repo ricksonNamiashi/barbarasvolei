@@ -19,6 +19,15 @@ const ProtectedRoute = ({ children, requiredRole }: Props) => {
 
   if (!user) return <Navigate to="/auth" replace />;
 
+  // Wait for role to load before checking permissions
+  if (requiredRole && role === null) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+      </div>
+    );
+  }
+
   if (requiredRole && role !== requiredRole && role !== "admin") {
     return <Navigate to="/" replace />;
   }
