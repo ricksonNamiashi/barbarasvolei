@@ -20,6 +20,7 @@ import AdminAvisos from "./pages/admin/AdminAvisos";
 import AdminAlunos from "./pages/admin/AdminAlunos";
 import AdminPagamentos from "./pages/admin/AdminPagamentos";
 import NotFound from "./pages/NotFound";
+import DevRoleSwitcher from "@/components/DevRoleSwitcher";
 
 const queryClient = new QueryClient();
 
@@ -47,6 +48,7 @@ const AppContent = () => {
         <Route path="*" element={<NotFound />} />
       </Routes>
       {!isAdmin && !isAuth && <BottomNav />}
+      <DevRoleSwitcher />
     </div>
   );
 };
