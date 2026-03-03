@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ArrowLeft, Plus, Search, CheckCircle2, Clock, AlertCircle, Trash2, Check } from "lucide-react";
+import { ArrowLeft, Plus, Search, CheckCircle2, Clock, AlertCircle, Trash2, Check, Users } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { format } from "date-fns";
@@ -11,8 +11,9 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogClose } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { useAllPayments, useCreatePayment, useUpdatePaymentStatus, useDeletePayment } from "@/hooks/use-payments-admin";
+import { useAllPayments, useCreatePayment, useUpdatePaymentStatus, useDeletePayment, useAllProfiles, useBulkCreatePayments } from "@/hooks/use-payments-admin";
 import { useStudents } from "@/hooks/use-students";
+import { Checkbox } from "@/components/ui/checkbox";
 
 const statusConfig = {
   paid: { icon: CheckCircle2, label: "Pago", color: "text-green-600", bg: "bg-green-50" },
@@ -28,9 +29,11 @@ const AdminPagamentos = () => {
   const { toast } = useToast();
   const { data: payments = [], isLoading } = useAllPayments();
   const { data: students = [] } = useStudents();
+  const { data: profiles = [] } = useAllProfiles();
   const createMutation = useCreatePayment();
   const updateStatusMutation = useUpdatePaymentStatus();
   const deleteMutation = useDeletePayment();
+  const bulkMutation = useBulkCreatePayments();
 
   const [search, setSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState<string>("all");
@@ -39,6 +42,13 @@ const AdminPagamentos = () => {
   const [formMonth, setFormMonth] = useState("");
   const [formAmount, setFormAmount] = useState("250");
   const [formDueDate, setFormDueDate] = useState("");
+
+  // Bulk generation
+  const [bulkOpen, setBulkOpen] = useState(false);
+  const [bulkMonth, setBulkMonth] = useState("");
+  const [bulkAmount, setBulkAmount] = useState("250");
+  const [bulkDueDate, setBulkDueDate] = useState("");
+  const [bulkSelectedIds, setBulkSelectedIds] = useState<string[]>([]);
 
   // For "mark as paid" confirmation
   const [confirmPayId, setConfirmPayId] = useState<string | null>(null);
@@ -93,6 +103,38 @@ const AdminPagamentos = () => {
     }
   };
 
+  const resetBulkForm = () => {
+    setBulkMonth("");
+    setBulkAmount("250");
+    setBulkDueDate("");
+    setBulkSelectedIds(profiles.map((p) => p.id));
+  };
+
+  const handleBulkCreate = async () => {
+    if (!bulkMonth || !bulkAmount || !bulkDueDate || bulkSelectedIds.length === 0) {
+      toast({ title: "Preencha todos os campos e selecione ao menos um aluno", variant: "destructive" });
+      return;
+    }
+    try {
+      await bulkMutation.mutateAsync({
+        userIds: bulkSelectedIds,
+        month: bulkMonth,
+        amount: Number(bulkAmount),
+        due_date: bulkDueDate,
+      });
+      toast({ title: `${bulkSelectedIds.length} mensalidade(s) gerada(s)!` });
+      setBulkOpen(false);
+    } catch {
+      toast({ title: "Erro ao gerar mensalidades em lote", variant: "destructive" });
+    }
+  };
+
+  const toggleBulkId = (id: string) => {
+    setBulkSelectedIds((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+    );
+  };
+
   const filtered = payments.filter((p) => {
     const matchSearch =
       p.profile_name?.toLowerCase().includes(search.toLowerCase()) ||
@@ -104,15 +146,8 @@ const AdminPagamentos = () => {
   const pendingCount = payments.filter((p) => p.status === "pending").length;
   const overdueCount = payments.filter((p) => p.status === "overdue").length;
 
-  // Build a list of users from profiles in payments + students for the form
-  const userOptions = (() => {
-    const map = new Map<string, string>();
-    payments.forEach((p) => {
-      if (p.profile_name) map.set(p.user_id, p.profile_name);
-    });
-    // Note: students table doesn't have user_id linked; we use profiles from payments
-    return Array.from(map.entries()).map(([id, name]) => ({ id, name }));
-  })();
+  // Use all profiles for the individual payment form
+  const userOptions = profiles.map((p) => ({ id: p.id, name: p.name }));
 
   return (
     <PageTransition>
@@ -127,12 +162,77 @@ const AdminPagamentos = () => {
               {pendingCount} pendente(s) · {overdueCount} atrasado(s)
             </p>
           </div>
-          <Dialog open={formOpen} onOpenChange={setFormOpen}>
-            <DialogTrigger asChild>
-              <Button size="sm" onClick={() => { resetForm(); setFormOpen(true); }} className="gap-1">
-                <Plus size={16} /> Nova
-              </Button>
-            </DialogTrigger>
+          <div className="flex gap-2">
+            <Dialog open={bulkOpen} onOpenChange={setBulkOpen}>
+              <DialogTrigger asChild>
+                <Button size="sm" variant="outline" onClick={() => { resetBulkForm(); setBulkOpen(true); }} className="gap-1">
+                  <Users size={16} /> Lote
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-[400px]">
+                <DialogHeader>
+                  <DialogTitle>Gerar Mensalidades em Lote</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4 py-2">
+                  <div className="space-y-2">
+                    <Label>Mês de Referência</Label>
+                    <Input placeholder="Ex: Março 2026" value={bulkMonth} onChange={(e) => setBulkMonth(e.target.value)} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Valor (R$)</Label>
+                    <Input type="number" value={bulkAmount} onChange={(e) => setBulkAmount(e.target.value)} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Data de Vencimento</Label>
+                    <Input type="date" value={bulkDueDate} onChange={(e) => setBulkDueDate(e.target.value)} />
+                  </div>
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <Label>Alunos ({bulkSelectedIds.length}/{profiles.length})</Label>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="h-6 text-xs"
+                        onClick={() =>
+                          setBulkSelectedIds(
+                            bulkSelectedIds.length === profiles.length ? [] : profiles.map((p) => p.id)
+                          )
+                        }
+                      >
+                        {bulkSelectedIds.length === profiles.length ? "Desmarcar todos" : "Selecionar todos"}
+                      </Button>
+                    </div>
+                    <div className="max-h-40 space-y-1 overflow-y-auto rounded-md border border-border p-2">
+                      {profiles.map((p) => (
+                        <label key={p.id} className="flex items-center gap-2 rounded px-1 py-0.5 text-sm hover:bg-muted cursor-pointer">
+                          <Checkbox
+                            checked={bulkSelectedIds.includes(p.id)}
+                            onCheckedChange={() => toggleBulkId(p.id)}
+                          />
+                          {p.name}
+                        </label>
+                      ))}
+                      {profiles.length === 0 && (
+                        <p className="text-xs text-muted-foreground py-2 text-center">Nenhum aluno cadastrado.</p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+                <DialogFooter>
+                  <DialogClose asChild><Button variant="outline" size="sm">Cancelar</Button></DialogClose>
+                  <Button size="sm" onClick={handleBulkCreate} disabled={bulkMutation.isPending}>
+                    {bulkMutation.isPending ? "Gerando..." : `Gerar ${bulkSelectedIds.length} mensalidade(s)`}
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+            <Dialog open={formOpen} onOpenChange={setFormOpen}>
+              <DialogTrigger asChild>
+                <Button size="sm" onClick={() => { resetForm(); setFormOpen(true); }} className="gap-1">
+                  <Plus size={16} /> Nova
+                </Button>
+              </DialogTrigger>
             <DialogContent className="max-w-[360px]">
               <DialogHeader>
                 <DialogTitle>Nova Mensalidade</DialogTitle>
@@ -174,7 +274,8 @@ const AdminPagamentos = () => {
                 <Button size="sm" onClick={handleCreate}>Salvar</Button>
               </DialogFooter>
             </DialogContent>
-          </Dialog>
+            </Dialog>
+          </div>
         </div>
       </header>
 

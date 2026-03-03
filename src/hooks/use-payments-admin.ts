@@ -83,3 +83,37 @@ export const useDeletePayment = () => {
     },
   });
 };
+
+export const useAllProfiles = () => {
+  return useQuery({
+    queryKey: ["all-profiles"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("id, name")
+        .order("name");
+      if (error) throw error;
+      return data as { id: string; name: string }[];
+    },
+  });
+};
+
+export const useBulkCreatePayments = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (params: { userIds: string[]; month: string; amount: number; due_date: string }) => {
+      const rows = params.userIds.map((user_id) => ({
+        user_id,
+        month: params.month,
+        amount: params.amount,
+        due_date: params.due_date,
+      }));
+      const { error } = await supabase.from("payments").insert(rows);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["admin-payments"] });
+      qc.invalidateQueries({ queryKey: ["payments"] });
+    },
+  });
+};
