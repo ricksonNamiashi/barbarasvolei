@@ -1,4 +1,4 @@
-import { Calendar, Bell, Users, CreditCard, ArrowRight, TrendingUp, DollarSign, AlertCircle, Clock } from "lucide-react";
+import { Calendar, Bell, Users, CreditCard, ArrowRight, TrendingUp, DollarSign, AlertCircle, Clock, ShieldAlert } from "lucide-react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from "recharts";
@@ -65,6 +65,12 @@ const AdminDashboard = () => {
     const totalPending = payments
       .filter((p) => p.status === "pending" || p.status === "overdue")
       .reduce((sum, p) => sum + p.amount, 0);
+    const overdueTotal = payments
+      .filter((p) => p.status === "overdue")
+      .reduce((sum, p) => sum + p.amount, 0);
+    const overdueCount = payments.filter((p) => p.status === "overdue").length;
+    const totalCount = payments.length;
+    const delinquencyRate = totalCount > 0 ? (overdueCount / totalCount) * 100 : 0;
 
     // Group by month for chart
     const monthMap = new Map<string, { paid: number; pending: number }>();
@@ -81,9 +87,9 @@ const AdminDashboard = () => {
 
     const chartData = Array.from(monthMap.entries())
       .map(([month, vals]) => ({ month, ...vals }))
-      .slice(-6); // Last 6 months
+      .slice(-6);
 
-    return { totalReceived, totalPending, chartData };
+    return { totalReceived, totalPending, overdueTotal, overdueCount, delinquencyRate, chartData };
   }, [payments]);
 
   return (
@@ -132,23 +138,35 @@ const AdminDashboard = () => {
             Resumo Financeiro
           </h3>
 
-          <div className="grid grid-cols-2 gap-3 mb-4">
-            <div className="rounded-xl border border-border bg-card p-4 shadow-card">
-              <div className="flex items-center gap-2 mb-1">
-                <DollarSign size={14} className="text-green-600" />
+          <div className="grid grid-cols-3 gap-3 mb-4">
+            <div className="rounded-xl border border-border bg-card p-3 shadow-card">
+              <div className="flex items-center gap-1.5 mb-1">
+                <DollarSign size={12} className="text-green-600" />
                 <span className="text-[10px] font-medium text-muted-foreground">Recebido</span>
               </div>
-              <p className="font-display text-lg font-bold text-green-600">
+              <p className="font-display text-base font-bold text-green-600">
                 {formatCurrency(financial.totalReceived)}
               </p>
             </div>
-            <div className="rounded-xl border border-border bg-card p-4 shadow-card">
-              <div className="flex items-center gap-2 mb-1">
-                <Clock size={14} className="text-primary" />
+            <div className="rounded-xl border border-border bg-card p-3 shadow-card">
+              <div className="flex items-center gap-1.5 mb-1">
+                <Clock size={12} className="text-primary" />
                 <span className="text-[10px] font-medium text-muted-foreground">A receber</span>
               </div>
-              <p className="font-display text-lg font-bold text-primary">
+              <p className="font-display text-base font-bold text-primary">
                 {formatCurrency(financial.totalPending)}
+              </p>
+            </div>
+            <div className="rounded-xl border border-border bg-card p-3 shadow-card">
+              <div className="flex items-center gap-1.5 mb-1">
+                <ShieldAlert size={12} className="text-destructive" />
+                <span className="text-[10px] font-medium text-muted-foreground">Inadimplência</span>
+              </div>
+              <p className={`font-display text-base font-bold ${financial.delinquencyRate > 0 ? "text-destructive" : "text-green-600"}`}>
+                {financial.delinquencyRate.toFixed(1)}%
+              </p>
+              <p className="text-[9px] text-muted-foreground mt-0.5">
+                {financial.overdueCount} de {payments.length}
               </p>
             </div>
           </div>
