@@ -1,14 +1,16 @@
-import { Calendar, Bell, Users, CreditCard, Settings, ArrowRight } from "lucide-react";
+import { Calendar, Bell, Users, CreditCard, ArrowRight, TrendingUp, DollarSign, AlertCircle, Clock } from "lucide-react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from "recharts";
 import PageTransition from "@/components/PageTransition";
+import { useAllPayments } from "@/hooks/use-payments-admin";
+import { useStudents } from "@/hooks/use-students";
+import { useNotices } from "@/hooks/use-notices";
+import { useSchedules } from "@/hooks/use-schedules";
+import { useMemo } from "react";
 
-const stats = [
-  { label: "Alunos Ativos", value: "47", icon: Users, color: "text-primary" },
-  { label: "Treinos/Semana", value: "12", icon: Calendar, color: "text-secondary" },
-  { label: "Avisos Ativos", value: "3", icon: Bell, color: "text-destructive" },
-  { label: "Pagamentos Pendentes", value: "8", icon: CreditCard, color: "text-accent" },
-];
+const formatCurrency = (v: number) =>
+  new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(v);
 
 const menuItems = [
   {
@@ -39,6 +41,50 @@ const menuItems = [
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
+  const { data: payments = [] } = useAllPayments();
+  const { data: students = [] } = useStudents();
+  const { data: notices = [] } = useNotices();
+  const { data: schedules = [] } = useSchedules();
+
+  const activeStudents = students.filter((s) => s.status === "Ativo").length;
+  const pendingPayments = payments.filter((p) => p.status === "pending").length;
+  const overduePayments = payments.filter((p) => p.status === "overdue").length;
+
+  const stats = [
+    { label: "Alunos Ativos", value: String(activeStudents), icon: Users, color: "text-primary" },
+    { label: "Treinos/Semana", value: String(schedules.length), icon: Calendar, color: "text-secondary" },
+    { label: "Pendentes", value: String(pendingPayments), icon: Clock, color: "text-primary" },
+    { label: "Atrasados", value: String(overduePayments), icon: AlertCircle, color: "text-destructive" },
+  ];
+
+  // Financial summary
+  const financial = useMemo(() => {
+    const totalReceived = payments
+      .filter((p) => p.status === "paid")
+      .reduce((sum, p) => sum + p.amount, 0);
+    const totalPending = payments
+      .filter((p) => p.status === "pending" || p.status === "overdue")
+      .reduce((sum, p) => sum + p.amount, 0);
+
+    // Group by month for chart
+    const monthMap = new Map<string, { paid: number; pending: number }>();
+    payments.forEach((p) => {
+      const key = p.month;
+      const entry = monthMap.get(key) ?? { paid: 0, pending: 0 };
+      if (p.status === "paid") {
+        entry.paid += p.amount;
+      } else {
+        entry.pending += p.amount;
+      }
+      monthMap.set(key, entry);
+    });
+
+    const chartData = Array.from(monthMap.entries())
+      .map(([month, vals]) => ({ month, ...vals }))
+      .slice(-6); // Last 6 months
+
+    return { totalReceived, totalPending, chartData };
+  }, [payments]);
 
   return (
     <PageTransition>
@@ -75,6 +121,86 @@ const AdminDashboard = () => {
           ))}
         </div>
 
+        {/* Financial Summary */}
+        <motion.section
+          initial={{ opacity: 0, y: 15 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.35 }}
+        >
+          <h3 className="mb-3 font-display text-base font-bold text-foreground flex items-center gap-2">
+            <TrendingUp size={18} className="text-primary" />
+            Resumo Financeiro
+          </h3>
+
+          <div className="grid grid-cols-2 gap-3 mb-4">
+            <div className="rounded-xl border border-border bg-card p-4 shadow-card">
+              <div className="flex items-center gap-2 mb-1">
+                <DollarSign size={14} className="text-green-600" />
+                <span className="text-[10px] font-medium text-muted-foreground">Recebido</span>
+              </div>
+              <p className="font-display text-lg font-bold text-green-600">
+                {formatCurrency(financial.totalReceived)}
+              </p>
+            </div>
+            <div className="rounded-xl border border-border bg-card p-4 shadow-card">
+              <div className="flex items-center gap-2 mb-1">
+                <Clock size={14} className="text-primary" />
+                <span className="text-[10px] font-medium text-muted-foreground">A receber</span>
+              </div>
+              <p className="font-display text-lg font-bold text-primary">
+                {formatCurrency(financial.totalPending)}
+              </p>
+            </div>
+          </div>
+
+          {/* Chart */}
+          {financial.chartData.length > 0 && (
+            <div className="rounded-xl border border-border bg-card p-4 shadow-card">
+              <p className="text-xs font-semibold text-muted-foreground mb-3">Pagamentos por Mês</p>
+              <ResponsiveContainer width="100%" height={180}>
+                <BarChart data={financial.chartData} barGap={2}>
+                  <XAxis
+                    dataKey="month"
+                    tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }}
+                    axisLine={false}
+                    tickLine={false}
+                    tickFormatter={(v: string) => {
+                      const parts = v.split(" ");
+                      return parts[0]?.substring(0, 3) ?? v;
+                    }}
+                  />
+                  <YAxis hide />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: "hsl(var(--card))",
+                      border: "1px solid hsl(var(--border))",
+                      borderRadius: 8,
+                      fontSize: 12,
+                    }}
+                    formatter={(value: number, name: string) => [
+                      formatCurrency(value),
+                      name === "paid" ? "Pago" : "Pendente",
+                    ]}
+                    labelStyle={{ fontWeight: 600, color: "hsl(var(--foreground))" }}
+                  />
+                  <Bar dataKey="paid" stackId="a" radius={[0, 0, 0, 0]} fill="hsl(142, 71%, 45%)" name="paid" />
+                  <Bar dataKey="pending" stackId="a" radius={[4, 4, 0, 0]} fill="hsl(var(--primary))" name="pending" />
+                </BarChart>
+              </ResponsiveContainer>
+              <div className="flex items-center justify-center gap-4 mt-2">
+                <div className="flex items-center gap-1.5">
+                  <div className="h-2.5 w-2.5 rounded-sm" style={{ backgroundColor: "hsl(142, 71%, 45%)" }} />
+                  <span className="text-[10px] text-muted-foreground">Pago</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <div className="h-2.5 w-2.5 rounded-sm bg-primary" />
+                  <span className="text-[10px] text-muted-foreground">Pendente</span>
+                </div>
+              </div>
+            </div>
+          )}
+        </motion.section>
+
         {/* Menu */}
         <section>
           <h3 className="mb-3 font-display text-base font-bold text-foreground">Gerenciamento</h3>
@@ -84,7 +210,7 @@ const AdminDashboard = () => {
                 key={item.to}
                 initial={{ opacity: 0, x: -15 }}
                 animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.2 + i * 0.08 }}
+                transition={{ delay: 0.5 + i * 0.08 }}
                 onClick={() => navigate(item.to)}
                 className="flex w-full items-center gap-3 rounded-xl border border-border bg-card p-4 shadow-card transition-transform active:scale-[0.98]"
               >
