@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from "recharts";
 import PageTransition from "@/components/PageTransition";
+import NotificationBell from "@/components/NotificationBell";
 import { useAllPayments } from "@/hooks/use-payments-admin";
 import { useStudents } from "@/hooks/use-students";
 import { useNotices } from "@/hooks/use-notices";
@@ -104,6 +105,7 @@ const AdminDashboard = () => {
             <h1 className="font-display text-lg font-bold text-foreground">Painel Admin</h1>
             <p className="text-xs text-muted-foreground">Gestão da escola</p>
           </div>
+          <NotificationBell />
           <button
             onClick={() => navigate("/")}
             className="flex h-9 items-center gap-1 rounded-lg bg-primary/10 px-3 text-xs font-medium text-primary"
