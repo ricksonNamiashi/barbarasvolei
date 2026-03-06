@@ -3,6 +3,7 @@ import { User, LogOut } from "lucide-react";
 import logoAbv from "@/assets/logo-abv.jpg";
 import { useAuth } from "@/contexts/AuthContext";
 import { Badge } from "@/components/ui/badge";
+import NotificationBell from "@/components/NotificationBell";
 
 interface HeaderProps {
   title?: string;
@@ -40,6 +41,7 @@ const Header = ({ title, subtitle }: HeaderProps) => {
             {roleLabels[role] || role}
           </Badge>
         )}
+        <NotificationBell />
         <button
           onClick={() => navigate("/perfil")}
           className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10 transition-colors active:bg-primary/20"

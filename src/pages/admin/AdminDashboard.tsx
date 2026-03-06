@@ -1,4 +1,4 @@
-import { Calendar, Bell, Users, CreditCard, ArrowRight, TrendingUp, DollarSign, AlertCircle, Clock, ShieldAlert } from "lucide-react";
+import { Calendar, Bell, Users, CreditCard, ArrowRight, TrendingUp, DollarSign, AlertCircle, Clock, ShieldAlert, Send } from "lucide-react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from "recharts";
@@ -7,6 +7,8 @@ import { useAllPayments } from "@/hooks/use-payments-admin";
 import { useStudents } from "@/hooks/use-students";
 import { useNotices } from "@/hooks/use-notices";
 import { useSchedules } from "@/hooks/use-schedules";
+import { useTriggerOverdueNotifications } from "@/hooks/use-notifications";
+import { useToast } from "@/hooks/use-toast";
 import { useMemo } from "react";
 
 const formatCurrency = (v: number) =>
@@ -45,6 +47,8 @@ const AdminDashboard = () => {
   const { data: students = [] } = useStudents();
   const { data: notices = [] } = useNotices();
   const { data: schedules = [] } = useSchedules();
+  const triggerNotifications = useTriggerOverdueNotifications();
+  const { toast } = useToast();
 
   const activeStudents = students.filter((s) => s.status === "Ativo").length;
   const pendingPayments = payments.filter((p) => p.status === "pending").length;
@@ -171,6 +175,28 @@ const AdminDashboard = () => {
             </div>
           </div>
 
+          {financial.overdueCount > 0 && (
+            <button
+              onClick={async () => {
+                try {
+                  const result = await triggerNotifications.mutateAsync();
+                  toast({
+                    title: "Notificações enviadas",
+                    description: `${result?.notified ?? 0} notificações criadas para pagamentos atrasados.`,
+                  });
+                } catch {
+                  toast({ title: "Erro ao enviar notificações", variant: "destructive" });
+                }
+              }}
+              disabled={triggerNotifications.isPending}
+              className="flex w-full items-center justify-center gap-2 rounded-xl border border-destructive/30 bg-destructive/5 p-3 text-xs font-semibold text-destructive transition-colors active:bg-destructive/10 disabled:opacity-50"
+            >
+              <Send size={14} />
+              {triggerNotifications.isPending
+                ? "Enviando..."
+                : `Notificar ${financial.overdueCount} inadimplentes`}
+            </button>
+          )}
           {/* Chart */}
           {financial.chartData.length > 0 && (
             <div className="rounded-xl border border-border bg-card p-4 shadow-card">
