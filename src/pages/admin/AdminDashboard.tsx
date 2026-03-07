@@ -1,4 +1,4 @@
-import { Calendar, Bell, Users, CreditCard, ArrowRight, TrendingUp, DollarSign, AlertCircle, Clock, ShieldAlert, Send } from "lucide-react";
+import { Calendar, Bell, Users, CreditCard, ArrowRight, TrendingUp, DollarSign, AlertCircle, Clock, ShieldAlert, Send, Download, FileText } from "lucide-react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from "recharts";
@@ -11,6 +11,7 @@ import { useSchedules } from "@/hooks/use-schedules";
 import { useTriggerOverdueNotifications } from "@/hooks/use-notifications";
 import { useToast } from "@/hooks/use-toast";
 import { useMemo } from "react";
+import { exportCSV, exportPDF } from "@/utils/export-financial-report";
 
 const formatCurrency = (v: number) =>
   new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(v);
@@ -139,10 +140,26 @@ const AdminDashboard = () => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.35 }}
         >
-          <h3 className="mb-3 font-display text-base font-bold text-foreground flex items-center gap-2">
-            <TrendingUp size={18} className="text-primary" />
-            Resumo Financeiro
-          </h3>
+          <div className="mb-3 flex items-center justify-between">
+            <h3 className="font-display text-base font-bold text-foreground flex items-center gap-2">
+              <TrendingUp size={18} className="text-primary" />
+              Resumo Financeiro
+            </h3>
+            <div className="flex gap-1.5">
+              <button
+                onClick={() => exportCSV(payments)}
+                className="flex items-center gap-1 rounded-lg bg-muted px-2.5 py-1.5 text-[10px] font-medium text-muted-foreground transition-colors hover:bg-muted/80 active:scale-95"
+              >
+                <Download size={12} /> CSV
+              </button>
+              <button
+                onClick={() => exportPDF(payments, financial)}
+                className="flex items-center gap-1 rounded-lg bg-primary/10 px-2.5 py-1.5 text-[10px] font-medium text-primary transition-colors hover:bg-primary/15 active:scale-95"
+              >
+                <FileText size={12} /> PDF
+              </button>
+            </div>
+          </div>
 
           <div className="grid grid-cols-3 gap-3 mb-4">
             <div className="rounded-xl border border-border bg-card p-3 shadow-card">
