@@ -35,7 +35,7 @@ const Index = () => {
             <img src={logoAbv} alt="ABV" className="h-16 w-16 rounded-xl border-2 border-primary-foreground/30 object-cover shadow-elevated" />
             <div>
               <h2 className="font-display text-xl font-bold text-primary-foreground">Bem-vindo ao ABV!</h2>
-              <p className="mt-0.5 text-sm text-primary-foreground/80">Academia de Vôlei dos Vikings</p>
+              <p className="mt-0.5 text-sm text-primary-foreground/80">A vida é melhor com vôlei e boas vibrações</p>
             </div>
           </div>
           <div className="absolute -right-4 -top-4 h-24 w-24 rounded-full bg-primary-foreground/10" />
