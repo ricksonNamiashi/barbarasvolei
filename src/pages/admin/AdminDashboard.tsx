@@ -10,8 +10,15 @@ import { useNotices } from "@/hooks/use-notices";
 import { useSchedules } from "@/hooks/use-schedules";
 import { useTriggerOverdueNotifications } from "@/hooks/use-notifications";
 import { useToast } from "@/hooks/use-toast";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { exportCSV, exportPDF } from "@/utils/export-financial-report";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 const formatCurrency = (v: number) =>
   new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(v);
