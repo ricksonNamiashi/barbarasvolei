@@ -106,6 +106,39 @@ const AdminDashboard = () => {
     return { totalReceived, totalPending, overdueTotal, overdueCount, delinquencyRate, chartData };
   }, [payments]);
 
+  // Filter payments by selected period for export
+  const filteredPayments = useMemo(() => {
+    if (exportPeriod === "all") return payments;
+    const now = new Date();
+    const currentMonth = now.getMonth(); // 0-indexed
+    const currentYear = now.getFullYear();
+
+    // Build list of "Month YYYY" strings to match
+    const periodsMap: Record<string, number> = {
+      "1m": 1,
+      "3m": 3,
+      "6m": 6,
+      "12m": 12,
+    };
+    const months = periodsMap[exportPeriod] ?? 0;
+    if (months === 0) return payments;
+
+    const cutoff = new Date(currentYear, currentMonth - months + 1, 1);
+    return payments.filter((p) => {
+      const dueDate = new Date(p.due_date);
+      return dueDate >= cutoff;
+    });
+  }, [payments, exportPeriod]);
+
+  const filteredFinancial = useMemo(() => {
+    const totalReceived = filteredPayments.filter((p) => p.status === "paid").reduce((s, p) => s + p.amount, 0);
+    const totalPending = filteredPayments.filter((p) => p.status === "pending" || p.status === "overdue").reduce((s, p) => s + p.amount, 0);
+    const overdueTotal = filteredPayments.filter((p) => p.status === "overdue").reduce((s, p) => s + p.amount, 0);
+    const overdueCount = filteredPayments.filter((p) => p.status === "overdue").length;
+    const delinquencyRate = filteredPayments.length > 0 ? (overdueCount / filteredPayments.length) * 100 : 0;
+    return { totalReceived, totalPending, overdueTotal, delinquencyRate };
+  }, [filteredPayments]);
+
   return (
     <PageTransition>
       <header className="sticky top-0 z-40 border-b border-border bg-card/90 backdrop-blur-lg">
