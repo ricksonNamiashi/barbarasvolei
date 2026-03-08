@@ -186,15 +186,27 @@ const AdminDashboard = () => {
               <TrendingUp size={18} className="text-primary" />
               Resumo Financeiro
             </h3>
-            <div className="flex gap-1.5">
+            <div className="flex items-center gap-1.5">
+              <Select value={exportPeriod} onValueChange={setExportPeriod}>
+                <SelectTrigger className="h-7 w-[90px] text-[10px] border-border">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Tudo</SelectItem>
+                  <SelectItem value="1m">Último mês</SelectItem>
+                  <SelectItem value="3m">3 meses</SelectItem>
+                  <SelectItem value="6m">6 meses</SelectItem>
+                  <SelectItem value="12m">12 meses</SelectItem>
+                </SelectContent>
+              </Select>
               <button
-                onClick={() => exportCSV(payments)}
+                onClick={() => exportCSV(filteredPayments)}
                 className="flex items-center gap-1 rounded-lg bg-muted px-2.5 py-1.5 text-[10px] font-medium text-muted-foreground transition-colors hover:bg-muted/80 active:scale-95"
               >
                 <Download size={12} /> CSV
               </button>
               <button
-                onClick={() => exportPDF(payments, financial)}
+                onClick={() => exportPDF(filteredPayments, filteredFinancial)}
                 className="flex items-center gap-1 rounded-lg bg-primary/10 px-2.5 py-1.5 text-[10px] font-medium text-primary transition-colors hover:bg-primary/15 active:scale-95"
               >
                 <FileText size={12} /> PDF
