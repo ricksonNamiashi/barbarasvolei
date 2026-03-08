@@ -52,6 +52,7 @@ const menuItems = [
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
+  const [exportPeriod, setExportPeriod] = useState("all");
   const { data: payments = [] } = useAllPayments();
   const { data: students = [] } = useStudents();
   const { data: notices = [] } = useNotices();
