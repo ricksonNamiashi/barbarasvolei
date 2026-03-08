@@ -10,8 +10,15 @@ import { useNotices } from "@/hooks/use-notices";
 import { useSchedules } from "@/hooks/use-schedules";
 import { useTriggerOverdueNotifications } from "@/hooks/use-notifications";
 import { useToast } from "@/hooks/use-toast";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { exportCSV, exportPDF } from "@/utils/export-financial-report";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 const formatCurrency = (v: number) =>
   new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(v);
@@ -45,6 +52,7 @@ const menuItems = [
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
+  const [exportPeriod, setExportPeriod] = useState("all");
   const { data: payments = [] } = useAllPayments();
   const { data: students = [] } = useStudents();
   const { data: notices = [] } = useNotices();
@@ -98,6 +106,39 @@ const AdminDashboard = () => {
     return { totalReceived, totalPending, overdueTotal, overdueCount, delinquencyRate, chartData };
   }, [payments]);
 
+  // Filter payments by selected period for export
+  const filteredPayments = useMemo(() => {
+    if (exportPeriod === "all") return payments;
+    const now = new Date();
+    const currentMonth = now.getMonth(); // 0-indexed
+    const currentYear = now.getFullYear();
+
+    // Build list of "Month YYYY" strings to match
+    const periodsMap: Record<string, number> = {
+      "1m": 1,
+      "3m": 3,
+      "6m": 6,
+      "12m": 12,
+    };
+    const months = periodsMap[exportPeriod] ?? 0;
+    if (months === 0) return payments;
+
+    const cutoff = new Date(currentYear, currentMonth - months + 1, 1);
+    return payments.filter((p) => {
+      const dueDate = new Date(p.due_date);
+      return dueDate >= cutoff;
+    });
+  }, [payments, exportPeriod]);
+
+  const filteredFinancial = useMemo(() => {
+    const totalReceived = filteredPayments.filter((p) => p.status === "paid").reduce((s, p) => s + p.amount, 0);
+    const totalPending = filteredPayments.filter((p) => p.status === "pending" || p.status === "overdue").reduce((s, p) => s + p.amount, 0);
+    const overdueTotal = filteredPayments.filter((p) => p.status === "overdue").reduce((s, p) => s + p.amount, 0);
+    const overdueCount = filteredPayments.filter((p) => p.status === "overdue").length;
+    const delinquencyRate = filteredPayments.length > 0 ? (overdueCount / filteredPayments.length) * 100 : 0;
+    return { totalReceived, totalPending, overdueTotal, delinquencyRate };
+  }, [filteredPayments]);
+
   return (
     <PageTransition>
       <header className="sticky top-0 z-40 border-b border-border bg-card/90 backdrop-blur-lg">
@@ -145,15 +186,27 @@ const AdminDashboard = () => {
               <TrendingUp size={18} className="text-primary" />
               Resumo Financeiro
             </h3>
-            <div className="flex gap-1.5">
+            <div className="flex items-center gap-1.5">
+              <Select value={exportPeriod} onValueChange={setExportPeriod}>
+                <SelectTrigger className="h-7 w-[90px] text-[10px] border-border">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Tudo</SelectItem>
+                  <SelectItem value="1m">Último mês</SelectItem>
+                  <SelectItem value="3m">3 meses</SelectItem>
+                  <SelectItem value="6m">6 meses</SelectItem>
+                  <SelectItem value="12m">12 meses</SelectItem>
+                </SelectContent>
+              </Select>
               <button
-                onClick={() => exportCSV(payments)}
+                onClick={() => exportCSV(filteredPayments)}
                 className="flex items-center gap-1 rounded-lg bg-muted px-2.5 py-1.5 text-[10px] font-medium text-muted-foreground transition-colors hover:bg-muted/80 active:scale-95"
               >
                 <Download size={12} /> CSV
               </button>
               <button
-                onClick={() => exportPDF(payments, financial)}
+                onClick={() => exportPDF(filteredPayments, filteredFinancial)}
                 className="flex items-center gap-1 rounded-lg bg-primary/10 px-2.5 py-1.5 text-[10px] font-medium text-primary transition-colors hover:bg-primary/15 active:scale-95"
               >
                 <FileText size={12} /> PDF
