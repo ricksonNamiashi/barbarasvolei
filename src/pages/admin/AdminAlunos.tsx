@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { ArrowLeft, Plus, Pencil, Trash2, Search } from "lucide-react";
+import { z } from "zod";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import PageTransition from "@/components/PageTransition";
@@ -13,7 +14,14 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/use-toast";
 import { useStudents, useCreateStudent, useUpdateStudent, useDeleteStudent, type Student } from "@/hooks/use-students";
 
-const categories = ["Sub-11", "Sub-13", "Sub-15", "Sub-17", "Adulto"];
+const categories = ["Sub-11", "Sub-13", "Sub-15", "Sub-17", "Adulto"] as const;
+
+const studentSchema = z.object({
+  name: z.string().trim().min(2, "Nome deve ter ao menos 2 caracteres").max(100, "Nome muito longo"),
+  age: z.number({ invalid_type_error: "Idade inválida" }).int().min(5, "Idade mínima: 5").max(100, "Idade máxima: 100"),
+  category: z.enum(categories, { errorMap: () => ({ message: "Selecione uma categoria" }) }),
+  responsible: z.string().trim().min(2, "Nome do responsável deve ter ao menos 2 caracteres").max(100, "Nome muito longo"),
+});
 
 const AdminAlunos = () => {
   const navigate = useNavigate();
@@ -38,15 +46,22 @@ const AdminAlunos = () => {
   };
 
   const handleSave = async () => {
-    if (!formName || !formAge || !formCategory || !formResponsible) {
-      toast({ title: "Preencha todos os campos", variant: "destructive" }); return;
+    const result = studentSchema.safeParse({
+      name: formName,
+      age: Number(formAge),
+      category: formCategory,
+      responsible: formResponsible,
+    });
+    if (!result.success) {
+      toast({ title: result.error.issues[0].message, variant: "destructive" }); return;
     }
+    const { name, age, category, responsible } = result.data;
     try {
       if (editItem) {
-        await updateMutation.mutateAsync({ id: editItem.id, name: formName, age: Number(formAge), category: formCategory, responsible: formResponsible });
+        await updateMutation.mutateAsync({ id: editItem.id, name, age, category, responsible });
         toast({ title: "Aluno atualizado!" });
       } else {
-        await createMutation.mutateAsync({ name: formName, age: Number(formAge), category: formCategory, responsible: formResponsible });
+        await createMutation.mutateAsync({ name, age, category, responsible });
         toast({ title: "Aluno cadastrado!" });
       }
       setFormOpen(false); resetForm();

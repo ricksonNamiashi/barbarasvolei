@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { ArrowLeft, Plus, Search, CheckCircle2, Clock, AlertCircle, Trash2, Check, Users } from "lucide-react";
+import { z } from "zod";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { format } from "date-fns";
@@ -23,6 +24,20 @@ const statusConfig = {
 
 const formatCurrency = (v: number) =>
   new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(v);
+
+const paymentSchema = z.object({
+  user_id: z.string().uuid("Selecione um aluno válido"),
+  month: z.string().trim().min(3, "Mês deve ter ao menos 3 caracteres").max(50, "Mês muito longo"),
+  amount: z.number({ invalid_type_error: "Valor inválido" }).min(1, "Valor mínimo: R$ 1").max(50000, "Valor máximo: R$ 50.000"),
+  due_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Data de vencimento inválida"),
+});
+
+const bulkPaymentSchema = z.object({
+  month: z.string().trim().min(3, "Mês deve ter ao menos 3 caracteres").max(50, "Mês muito longo"),
+  amount: z.number({ invalid_type_error: "Valor inválido" }).min(1, "Valor mínimo: R$ 1").max(50000, "Valor máximo: R$ 50.000"),
+  due_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Data de vencimento inválida"),
+  userIds: z.array(z.string().uuid()).min(1, "Selecione ao menos um aluno"),
+});
 
 const AdminPagamentos = () => {
   const navigate = useNavigate();
@@ -61,17 +76,18 @@ const AdminPagamentos = () => {
   };
 
   const handleCreate = async () => {
-    if (!formUserId || !formMonth || !formAmount || !formDueDate) {
-      toast({ title: "Preencha todos os campos", variant: "destructive" });
+    const result = paymentSchema.safeParse({
+      user_id: formUserId,
+      month: formMonth,
+      amount: Number(formAmount),
+      due_date: formDueDate,
+    });
+    if (!result.success) {
+      toast({ title: result.error.issues[0].message, variant: "destructive" });
       return;
     }
     try {
-      await createMutation.mutateAsync({
-        user_id: formUserId,
-        month: formMonth,
-        amount: Number(formAmount),
-        due_date: formDueDate,
-      });
+      await createMutation.mutateAsync({ user_id: result.data.user_id, month: result.data.month, amount: result.data.amount, due_date: result.data.due_date });
       toast({ title: "Mensalidade adicionada!" });
       setFormOpen(false);
       resetForm();
@@ -111,18 +127,24 @@ const AdminPagamentos = () => {
   };
 
   const handleBulkCreate = async () => {
-    if (!bulkMonth || !bulkAmount || !bulkDueDate || bulkSelectedIds.length === 0) {
-      toast({ title: "Preencha todos os campos e selecione ao menos um aluno", variant: "destructive" });
+    const result = bulkPaymentSchema.safeParse({
+      month: bulkMonth,
+      amount: Number(bulkAmount),
+      due_date: bulkDueDate,
+      userIds: bulkSelectedIds,
+    });
+    if (!result.success) {
+      toast({ title: result.error.issues[0].message, variant: "destructive" });
       return;
     }
     try {
       await bulkMutation.mutateAsync({
-        userIds: bulkSelectedIds,
-        month: bulkMonth,
-        amount: Number(bulkAmount),
-        due_date: bulkDueDate,
+        userIds: result.data.userIds,
+        month: result.data.month,
+        amount: result.data.amount,
+        due_date: result.data.due_date,
       });
-      toast({ title: `${bulkSelectedIds.length} mensalidade(s) gerada(s)!` });
+      toast({ title: `${result.data.userIds.length} mensalidade(s) gerada(s)!` });
       setBulkOpen(false);
     } catch {
       toast({ title: "Erro ao gerar mensalidades em lote", variant: "destructive" });

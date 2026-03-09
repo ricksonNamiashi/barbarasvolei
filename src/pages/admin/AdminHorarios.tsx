@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { ArrowLeft, Plus, Pencil, Trash2, Clock } from "lucide-react";
+import { z } from "zod";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import PageTransition from "@/components/PageTransition";
@@ -13,8 +14,16 @@ import { useToast } from "@/hooks/use-toast";
 import { useSchedules, type Schedule } from "@/hooks/use-schedules";
 import { useCreateSchedule, useUpdateSchedule, useDeleteSchedule } from "@/hooks/use-schedules-admin";
 
-const days = ["Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado"];
-const categories = ["Sub-11", "Sub-13", "Sub-15", "Sub-17", "Adulto"];
+const days = ["Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado"] as const;
+const categories = ["Sub-11", "Sub-13", "Sub-15", "Sub-17", "Adulto"] as const;
+
+const timeRegex = /^\d{2}:\d{2}\s*-\s*\d{2}:\d{2}$/;
+const scheduleSchema = z.object({
+  day: z.enum(days, { errorMap: () => ({ message: "Selecione um dia" }) }),
+  time: z.string().regex(timeRegex, "Formato de horário inválido (ex: 17:00 - 18:30)"),
+  category: z.enum(categories, { errorMap: () => ({ message: "Selecione uma categoria" }) }),
+  location: z.string().trim().min(2, "Local deve ter ao menos 2 caracteres").max(100, "Local muito longo"),
+});
 
 const AdminHorarios = () => {
   const navigate = useNavigate();
@@ -38,15 +47,22 @@ const AdminHorarios = () => {
   };
 
   const handleSave = async () => {
-    if (!formDay || !formTime || !formCategory || !formLocation) {
-      toast({ title: "Preencha todos os campos", variant: "destructive" }); return;
+    const result = scheduleSchema.safeParse({
+      day: formDay,
+      time: formTime,
+      category: formCategory,
+      location: formLocation,
+    });
+    if (!result.success) {
+      toast({ title: result.error.issues[0].message, variant: "destructive" }); return;
     }
+    const { day, time, category, location } = result.data;
     try {
       if (editItem) {
-        await updateMutation.mutateAsync({ id: editItem.id, day: formDay, time: formTime, category: formCategory, location: formLocation });
+        await updateMutation.mutateAsync({ id: editItem.id, day, time, category, location });
         toast({ title: "Horário atualizado!" });
       } else {
-        await createMutation.mutateAsync({ day: formDay, time: formTime, category: formCategory, location: formLocation });
+        await createMutation.mutateAsync({ day, time, category, location });
         toast({ title: "Horário criado!" });
       }
       setFormOpen(false); resetForm();
