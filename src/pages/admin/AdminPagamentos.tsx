@@ -87,7 +87,7 @@ const AdminPagamentos = () => {
       return;
     }
     try {
-      await createMutation.mutateAsync(result.data);
+      await createMutation.mutateAsync({ user_id: result.data.user_id, month: result.data.month, amount: result.data.amount, due_date: result.data.due_date });
       toast({ title: "Mensalidade adicionada!" });
       setFormOpen(false);
       resetForm();
