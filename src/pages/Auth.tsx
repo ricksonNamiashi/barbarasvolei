@@ -24,6 +24,7 @@ const Auth = () => {
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [shakeForm, setShakeForm] = useState(false);
   const { signIn, signUp } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -36,18 +37,24 @@ const Auth = () => {
       const { error } = await signIn(email, password);
       if (error) {
         toast({ title: "Erro ao entrar", description: error.message, variant: "destructive" });
+        setShakeForm(true);
+        setTimeout(() => setShakeForm(false), 600);
       } else {
         navigate("/");
       }
     } else {
       if (!name.trim()) {
         toast({ title: "Informe seu nome", variant: "destructive" });
+        setShakeForm(true);
+        setTimeout(() => setShakeForm(false), 600);
         setSubmitting(false);
         return;
       }
       const { error } = await signUp(email, password, name);
       if (error) {
         toast({ title: "Erro ao cadastrar", description: error.message, variant: "destructive" });
+        setShakeForm(true);
+        setTimeout(() => setShakeForm(false), 600);
       } else {
         toast({ title: "Conta criada com sucesso!" });
         navigate("/");
@@ -132,7 +139,12 @@ const Auth = () => {
           </motion.div>
 
           {/* Form */}
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <motion.form
+            onSubmit={handleSubmit}
+            className="space-y-4"
+            animate={shakeForm ? { x: [0, -12, 12, -8, 8, -4, 4, 0] } : { x: 0 }}
+            transition={{ duration: 0.5, ease: "easeInOut" }}
+          >
             <AnimatePresence mode="wait">
               {!isLogin && (
                 <motion.div
@@ -254,7 +266,7 @@ const Auth = () => {
                 </AnimatePresence>
               </Button>
             </motion.div>
-          </form>
+          </motion.form>
 
           {/* Toggle */}
           <motion.div
