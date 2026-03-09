@@ -25,6 +25,20 @@ const statusConfig = {
 const formatCurrency = (v: number) =>
   new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(v);
 
+const paymentSchema = z.object({
+  user_id: z.string().uuid("Selecione um aluno válido"),
+  month: z.string().trim().min(3, "Mês deve ter ao menos 3 caracteres").max(50, "Mês muito longo"),
+  amount: z.number({ invalid_type_error: "Valor inválido" }).min(1, "Valor mínimo: R$ 1").max(50000, "Valor máximo: R$ 50.000"),
+  due_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Data de vencimento inválida"),
+});
+
+const bulkPaymentSchema = z.object({
+  month: z.string().trim().min(3, "Mês deve ter ao menos 3 caracteres").max(50, "Mês muito longo"),
+  amount: z.number({ invalid_type_error: "Valor inválido" }).min(1, "Valor mínimo: R$ 1").max(50000, "Valor máximo: R$ 50.000"),
+  due_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Data de vencimento inválida"),
+  userIds: z.array(z.string().uuid()).min(1, "Selecione ao menos um aluno"),
+});
+
 const AdminPagamentos = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
