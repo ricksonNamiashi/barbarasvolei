@@ -76,17 +76,18 @@ const AdminPagamentos = () => {
   };
 
   const handleCreate = async () => {
-    if (!formUserId || !formMonth || !formAmount || !formDueDate) {
-      toast({ title: "Preencha todos os campos", variant: "destructive" });
+    const result = paymentSchema.safeParse({
+      user_id: formUserId,
+      month: formMonth,
+      amount: Number(formAmount),
+      due_date: formDueDate,
+    });
+    if (!result.success) {
+      toast({ title: result.error.issues[0].message, variant: "destructive" });
       return;
     }
     try {
-      await createMutation.mutateAsync({
-        user_id: formUserId,
-        month: formMonth,
-        amount: Number(formAmount),
-        due_date: formDueDate,
-      });
+      await createMutation.mutateAsync(result.data);
       toast({ title: "Mensalidade adicionada!" });
       setFormOpen(false);
       resetForm();
