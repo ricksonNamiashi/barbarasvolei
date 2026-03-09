@@ -9,6 +9,22 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import logoAbv from "@/assets/logo-abv.jpg";
 
+const translateError = (message: string): string => {
+  const map: Record<string, string> = {
+    "Invalid login credentials": "Email ou senha incorretos",
+    "Email not confirmed": "Email ainda não confirmado. Verifique sua caixa de entrada",
+    "User already registered": "Este email já está cadastrado",
+    "Password should be at least 6 characters": "A senha deve ter pelo menos 6 caracteres",
+    "Unable to validate email address: invalid format": "Formato de email inválido",
+    "Email rate limit exceeded": "Muitas tentativas. Aguarde alguns minutos",
+    "For security purposes, you can only request this after": "Por segurança, aguarde antes de tentar novamente",
+  };
+  for (const [key, value] of Object.entries(map)) {
+    if (message.includes(key)) return value;
+  }
+  return message;
+};
+
 const floatingBalls = Array.from({ length: 6 }, (_, i) => ({
   id: i,
   x: Math.random() * 100,
