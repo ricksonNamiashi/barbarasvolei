@@ -52,7 +52,7 @@ const Auth = () => {
     if (isLogin) {
       const { error } = await signIn(email, password);
       if (error) {
-        toast({ title: "Erro ao entrar", description: error.message, variant: "destructive" });
+        toast({ title: "Erro ao entrar", description: translateError(error.message), variant: "destructive" });
         setShakeForm(true);
         setTimeout(() => setShakeForm(false), 600);
       } else {
