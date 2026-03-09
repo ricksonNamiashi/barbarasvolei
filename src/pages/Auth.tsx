@@ -45,6 +45,8 @@ const Auth = () => {
     } else {
       if (!name.trim()) {
         toast({ title: "Informe seu nome", variant: "destructive" });
+        setShakeForm(true);
+        setTimeout(() => setShakeForm(false), 600);
         setSubmitting(false);
         return;
       }
