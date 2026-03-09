@@ -139,7 +139,12 @@ const Auth = () => {
           </motion.div>
 
           {/* Form */}
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <motion.form
+            onSubmit={handleSubmit}
+            className="space-y-4"
+            animate={shakeForm ? { x: [0, -12, 12, -8, 8, -4, 4, 0] } : { x: 0 }}
+            transition={{ duration: 0.5, ease: "easeInOut" }}
+          >
             <AnimatePresence mode="wait">
               {!isLogin && (
                 <motion.div
