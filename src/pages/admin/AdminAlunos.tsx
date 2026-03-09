@@ -46,15 +46,22 @@ const AdminAlunos = () => {
   };
 
   const handleSave = async () => {
-    if (!formName || !formAge || !formCategory || !formResponsible) {
-      toast({ title: "Preencha todos os campos", variant: "destructive" }); return;
+    const result = studentSchema.safeParse({
+      name: formName,
+      age: Number(formAge),
+      category: formCategory,
+      responsible: formResponsible,
+    });
+    if (!result.success) {
+      toast({ title: result.error.issues[0].message, variant: "destructive" }); return;
     }
+    const { name, age, category, responsible } = result.data;
     try {
       if (editItem) {
-        await updateMutation.mutateAsync({ id: editItem.id, name: formName, age: Number(formAge), category: formCategory, responsible: formResponsible });
+        await updateMutation.mutateAsync({ id: editItem.id, name, age, category, responsible });
         toast({ title: "Aluno atualizado!" });
       } else {
-        await createMutation.mutateAsync({ name: formName, age: Number(formAge), category: formCategory, responsible: formResponsible });
+        await createMutation.mutateAsync({ name, age, category, responsible });
         toast({ title: "Aluno cadastrado!" });
       }
       setFormOpen(false); resetForm();

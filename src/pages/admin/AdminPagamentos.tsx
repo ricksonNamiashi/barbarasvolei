@@ -127,18 +127,24 @@ const AdminPagamentos = () => {
   };
 
   const handleBulkCreate = async () => {
-    if (!bulkMonth || !bulkAmount || !bulkDueDate || bulkSelectedIds.length === 0) {
-      toast({ title: "Preencha todos os campos e selecione ao menos um aluno", variant: "destructive" });
+    const result = bulkPaymentSchema.safeParse({
+      month: bulkMonth,
+      amount: Number(bulkAmount),
+      due_date: bulkDueDate,
+      userIds: bulkSelectedIds,
+    });
+    if (!result.success) {
+      toast({ title: result.error.issues[0].message, variant: "destructive" });
       return;
     }
     try {
       await bulkMutation.mutateAsync({
-        userIds: bulkSelectedIds,
-        month: bulkMonth,
-        amount: Number(bulkAmount),
-        due_date: bulkDueDate,
+        userIds: result.data.userIds,
+        month: result.data.month,
+        amount: result.data.amount,
+        due_date: result.data.due_date,
       });
-      toast({ title: `${bulkSelectedIds.length} mensalidade(s) gerada(s)!` });
+      toast({ title: `${result.data.userIds.length} mensalidade(s) gerada(s)!` });
       setBulkOpen(false);
     } catch {
       toast({ title: "Erro ao gerar mensalidades em lote", variant: "destructive" });

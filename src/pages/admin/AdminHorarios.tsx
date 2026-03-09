@@ -47,15 +47,22 @@ const AdminHorarios = () => {
   };
 
   const handleSave = async () => {
-    if (!formDay || !formTime || !formCategory || !formLocation) {
-      toast({ title: "Preencha todos os campos", variant: "destructive" }); return;
+    const result = scheduleSchema.safeParse({
+      day: formDay,
+      time: formTime,
+      category: formCategory,
+      location: formLocation,
+    });
+    if (!result.success) {
+      toast({ title: result.error.issues[0].message, variant: "destructive" }); return;
     }
+    const { day, time, category, location } = result.data;
     try {
       if (editItem) {
-        await updateMutation.mutateAsync({ id: editItem.id, day: formDay, time: formTime, category: formCategory, location: formLocation });
+        await updateMutation.mutateAsync({ id: editItem.id, day, time, category, location });
         toast({ title: "Horário atualizado!" });
       } else {
-        await createMutation.mutateAsync({ day: formDay, time: formTime, category: formCategory, location: formLocation });
+        await createMutation.mutateAsync({ day, time, category, location });
         toast({ title: "Horário criado!" });
       }
       setFormOpen(false); resetForm();
