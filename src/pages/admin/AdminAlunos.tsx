@@ -14,7 +14,14 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/use-toast";
 import { useStudents, useCreateStudent, useUpdateStudent, useDeleteStudent, type Student } from "@/hooks/use-students";
 
-const categories = ["Sub-11", "Sub-13", "Sub-15", "Sub-17", "Adulto"];
+const categories = ["Sub-11", "Sub-13", "Sub-15", "Sub-17", "Adulto"] as const;
+
+const studentSchema = z.object({
+  name: z.string().trim().min(2, "Nome deve ter ao menos 2 caracteres").max(100, "Nome muito longo"),
+  age: z.number({ invalid_type_error: "Idade inválida" }).int().min(5, "Idade mínima: 5").max(100, "Idade máxima: 100"),
+  category: z.enum(categories, { errorMap: () => ({ message: "Selecione uma categoria" }) }),
+  responsible: z.string().trim().min(2, "Nome do responsável deve ter ao menos 2 caracteres").max(100, "Nome muito longo"),
+});
 
 const AdminAlunos = () => {
   const navigate = useNavigate();
