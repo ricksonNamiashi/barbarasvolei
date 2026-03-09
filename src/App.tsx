@@ -48,7 +48,7 @@ const AppContent = () => {
         <Route path="*" element={<NotFound />} />
       </Routes>
       {!isAdmin && !isAuth && <BottomNav />}
-      <DevRoleSwitcher />
+      {import.meta.env.DEV && <DevRoleSwitcher />}
     </div>
   );
 };
