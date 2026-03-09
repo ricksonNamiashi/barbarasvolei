@@ -68,7 +68,7 @@ const Auth = () => {
       }
       const { error } = await signUp(email, password, name);
       if (error) {
-        toast({ title: "Erro ao cadastrar", description: error.message, variant: "destructive" });
+        toast({ title: "Erro ao cadastrar", description: translateError(error.message), variant: "destructive" });
         setShakeForm(true);
         setTimeout(() => setShakeForm(false), 600);
       } else {
