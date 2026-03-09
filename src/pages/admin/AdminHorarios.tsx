@@ -14,8 +14,16 @@ import { useToast } from "@/hooks/use-toast";
 import { useSchedules, type Schedule } from "@/hooks/use-schedules";
 import { useCreateSchedule, useUpdateSchedule, useDeleteSchedule } from "@/hooks/use-schedules-admin";
 
-const days = ["Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado"];
-const categories = ["Sub-11", "Sub-13", "Sub-15", "Sub-17", "Adulto"];
+const days = ["Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado"] as const;
+const categories = ["Sub-11", "Sub-13", "Sub-15", "Sub-17", "Adulto"] as const;
+
+const timeRegex = /^\d{2}:\d{2}\s*-\s*\d{2}:\d{2}$/;
+const scheduleSchema = z.object({
+  day: z.enum(days, { errorMap: () => ({ message: "Selecione um dia" }) }),
+  time: z.string().regex(timeRegex, "Formato de horário inválido (ex: 17:00 - 18:30)"),
+  category: z.enum(categories, { errorMap: () => ({ message: "Selecione uma categoria" }) }),
+  location: z.string().trim().min(2, "Local deve ter ao menos 2 caracteres").max(100, "Local muito longo"),
+});
 
 const AdminHorarios = () => {
   const navigate = useNavigate();
