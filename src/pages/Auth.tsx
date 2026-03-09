@@ -266,7 +266,7 @@ const Auth = () => {
                 </AnimatePresence>
               </Button>
             </motion.div>
-          </form>
+          </motion.form>
 
           {/* Toggle */}
           <motion.div
