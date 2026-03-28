@@ -18,7 +18,7 @@ import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminHorarios from "./pages/admin/AdminHorarios";
 import AdminAvisos from "./pages/admin/AdminAvisos";
 import AdminResponsaveis from "./pages/admin/AdminResponsaveis";
-import AdminPagamentos from "./pages/admin/AdminPagamentos";
+import AdminAlunos from "./pages/admin/AdminAlunos";
 import NotFound from "./pages/NotFound";
 import DevRoleSwitcher from "@/components/DevRoleSwitcher";
 
