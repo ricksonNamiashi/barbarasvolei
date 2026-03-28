@@ -32,7 +32,7 @@ const AppContent = () => {
   return (
     <div className="mx-auto min-h-screen max-w-md bg-background">
       <Routes>
-        <Route path="/auth" element={<Auth />} />
+        <Route path="/admin/responsaveis" element={<ProtectedRoute requiredRole="admin"><AdminResponsaveis /></ProtectedRoute>} />
         <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
         <Route path="/agenda" element={<ProtectedRoute><Agenda /></ProtectedRoute>} />
         <Route path="/professores" element={<ProtectedRoute><Professores /></ProtectedRoute>} />
