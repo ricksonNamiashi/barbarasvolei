@@ -1,97 +1,185 @@
-import { createContext, useContext, useEffect, useState, ReactNode } from "react";
-import { User, Session } from "@supabase/supabase-js";
-import { supabase } from "@/integrations/supabase/client";
+import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { supabase } from '@/integrations/supabase/client';
 
-type AppRole = "admin" | "responsavel" | "aluno";
+export interface User {
+  id: string;
+  email: string;
+  name: string;
+  role: 'admin' | 'admin_programador' | 'responsavel' | 'aluno' | null;
+}
 
 interface AuthContextType {
   user: User | null;
-  session: Session | null;
-  profile: { id: string; name: string } | null;
-  role: AppRole | null;
   loading: boolean;
-  signUp: (email: string, password: string, name: string) => Promise<{ error: Error | null }>;
-  signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
+  signIn: (email: string, password: string) => Promise<{ error?: any }>;
+  signUp: (email: string, password: string, name: string) => Promise<{ error?: any }>;
   signOut: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export const useAuth = () => {
-  const ctx = useContext(AuthContext);
-  if (!ctx) throw new Error("useAuth must be used within AuthProvider");
-  return ctx;
-};
-
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
-  const [session, setSession] = useState<Session | null>(null);
-  const [profile, setProfile] = useState<{ id: string; name: string } | null>(null);
-  const [role, setRole] = useState<AppRole | null>(null);
   const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
 
-  const fetchProfileAndRole = async (userId: string) => {
-    const [profileRes, roleRes] = await Promise.all([
-      supabase.from("profiles").select("id, name").eq("id", userId).maybeSingle(),
-      supabase.from("user_roles").select("role").eq("user_id", userId).maybeSingle(),
-    ]);
-    if (profileRes.data) setProfile(profileRes.data);
-    if (roleRes.data) setRole(roleRes.data.role as AppRole);
+  // Buscar role do usuário
+  const fetchUserRole = async (userId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('users_roles')
+        .select('role')
+        .eq('user_id', userId)
+        .single();
+
+      return { role: data?.role, error };
+    } catch (err) {
+      return { role: null, error: err };
+    }
   };
 
+  // Verificar sessão ao carregar
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (_event, session) => {
-        setSession(session);
-        setUser(session?.user ?? null);
+    const checkSession = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
         if (session?.user) {
-          setTimeout(() => fetchProfileAndRole(session.user.id), 0);
-        } else {
-          setProfile(null);
-          setRole(null);
+          const { role } = await fetchUserRole(session.user.id);
+          
+          const userData: User = {
+            id: session.user.id,
+            email: session.user.email || '',
+            name: session.user.user_metadata?.name || 'Usuário',
+            role: (role as any) || null,
+          };
+
+          setUser(userData);
+
+          // Redirecionar admin para painel
+          if (role === 'admin' || role === 'admin_programador') {
+            navigate('/admin', { replace: true });
+          }
         }
+      } catch (error) {
+        console.error('Erro ao verificar sessão:', error);
+      } finally {
         setLoading(false);
+      }
+    };
+
+    checkSession();
+
+    // Listener para mudanças de autenticação
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        if (session?.user) {
+          const { role } = await fetchUserRole(session.user.id);
+          const userData: User = {
+            id: session.user.id,
+            email: session.user.email || '',
+            name: session.user.user_metadata?.name || 'Usuário',
+            role: (role as any) || null,
+          };
+          setUser(userData);
+
+          if (role === 'admin' || role === 'admin_programador') {
+            navigate('/admin', { replace: true });
+          }
+        } else {
+          setUser(null);
+          navigate('/auth', { replace: true });
+        }
       }
     );
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        fetchProfileAndRole(session.user.id);
-      }
-      setLoading(false);
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
-
-  const signUp = async (email: string, password: string, name: string) => {
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        emailRedirectTo: window.location.origin,
-        data: { name },
-      },
-    });
-    return { error: error as Error | null };
-  };
+    return () => subscription?.unsubscribe();
+  }, [navigate]);
 
   const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    return { error: error as Error | null };
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (error) return { error };
+
+      if (data.user) {
+        const { role } = await fetchUserRole(data.user.id);
+        const userData: User = {
+          id: data.user.id,
+          email: data.user.email || '',
+          name: data.user.user_metadata?.name || 'Usuário',
+          role: (role as any) || null,
+        };
+        setUser(userData);
+
+        // Redirecionar admin automaticamente
+        if (role === 'admin' || role === 'admin_programador') {
+          navigate('/admin', { replace: true });
+        }
+      }
+
+      return {};
+    } catch (error) {
+      return { error };
+    }
+  };
+
+  const signUp = async (email: string, password: string, name: string) => {
+    try {
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: { name },
+        },
+      });
+
+      if (error) return { error };
+
+      if (data.user) {
+        // Criar registro de usuário com role de responsavel
+        await supabase
+          .from('users_roles')
+          .insert({
+            user_id: data.user.id,
+            role: 'responsavel',
+          });
+
+        const userData: User = {
+          id: data.user.id,
+          email: data.user.email || '',
+          name,
+          role: 'responsavel',
+        };
+        setUser(userData);
+      }
+
+      return {};
+    } catch (error) {
+      return { error };
+    }
   };
 
   const signOut = async () => {
     await supabase.auth.signOut();
-    setProfile(null);
-    setRole(null);
+    setUser(null);
+    navigate('/auth', { replace: true });
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, profile, role, loading, signUp, signIn, signOut }}>
+    <AuthContext.Provider value={{ user, loading, signIn, signUp, signOut }}>
       {children}
     </AuthContext.Provider>
   );
+};
+
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error('useAuth deve ser usado dentro de AuthProvider');
+  }
+  return context;
 };
