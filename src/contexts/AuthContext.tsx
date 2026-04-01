@@ -80,7 +80,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setProfile(prof);
     setRole(userRole);
 
-    if (userRole === 'admin' || userRole === 'admin_programador') {
+    if (userRole === 'admin') {
       navigate('/admin', { replace: true });
     }
   };
