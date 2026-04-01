@@ -7,10 +7,20 @@ export interface User {
   email: string;
   name: string;
   role: 'admin' | 'admin_programador' | 'responsavel' | 'aluno' | null;
+  created_at?: string;
+}
+
+export interface Profile {
+  id: string;
+  name: string;
+  created_at: string;
+  updated_at: string;
 }
 
 interface AuthContextType {
   user: User | null;
+  profile: Profile | null;
+  role: string | null;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<{ error?: any }>;
   signUp: (email: string, password: string, name: string) => Promise<{ error?: any }>;
@@ -21,43 +31,60 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
+  const [profile, setProfile] = useState<Profile | null>(null);
+  const [role, setRole] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
-  // Buscar role do usuário
   const fetchUserRole = async (userId: string) => {
     try {
       const { data, error } = await supabase
-        .from('users_roles')
+        .from('user_roles')
         .select('role')
         .eq('user_id', userId)
-        .single();
+        .maybeSingle();
 
-      return { role: data?.role, error };
+      return { role: data?.role ?? null, error };
     } catch (err) {
       return { role: null, error: err };
     }
   };
 
-  // Verificar sessão ao carregar
+  const fetchProfile = async (userId: string) => {
+    try {
+      const { data } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .maybeSingle();
+      return data as Profile | null;
+    } catch {
+      return null;
+    }
+  };
+
+  const buildUser = (sessionUser: any, userRole: string | null): User => ({
+    id: sessionUser.id,
+    email: sessionUser.email || '',
+    name: sessionUser.user_metadata?.name || 'Usuário',
+    role: (userRole as any) || null,
+    created_at: sessionUser.created_at,
+  });
+
   useEffect(() => {
     const checkSession = async () => {
       try {
         const { data: { session } } = await supabase.auth.getSession();
         if (session?.user) {
-          const { role } = await fetchUserRole(session.user.id);
-          
-          const userData: User = {
-            id: session.user.id,
-            email: session.user.email || '',
-            name: session.user.user_metadata?.name || 'Usuário',
-            role: (role as any) || null,
-          };
+          const { role: userRole } = await fetchUserRole(session.user.id);
+          const prof = await fetchProfile(session.user.id);
+          const userData = buildUser(session.user, userRole);
 
           setUser(userData);
+          setProfile(prof);
+          setRole(userRole);
 
-          // Redirecionar admin para painel
-          if (role === 'admin' || role === 'admin_programador') {
+          if (userRole === 'admin' || userRole === 'admin_programador') {
             navigate('/admin', { replace: true });
           }
         }
@@ -70,24 +97,23 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     checkSession();
 
-    // Listener para mudanças de autenticação
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         if (session?.user) {
-          const { role } = await fetchUserRole(session.user.id);
-          const userData: User = {
-            id: session.user.id,
-            email: session.user.email || '',
-            name: session.user.user_metadata?.name || 'Usuário',
-            role: (role as any) || null,
-          };
+          const { role: userRole } = await fetchUserRole(session.user.id);
+          const prof = await fetchProfile(session.user.id);
+          const userData = buildUser(session.user, userRole);
           setUser(userData);
+          setProfile(prof);
+          setRole(userRole);
 
-          if (role === 'admin' || role === 'admin_programador') {
+          if (userRole === 'admin' || userRole === 'admin_programador') {
             navigate('/admin', { replace: true });
           }
         } else {
           setUser(null);
+          setProfile(null);
+          setRole(null);
           navigate('/auth', { replace: true });
         }
       }
@@ -98,25 +124,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const signIn = async (email: string, password: string) => {
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) return { error };
 
       if (data.user) {
-        const { role } = await fetchUserRole(data.user.id);
-        const userData: User = {
-          id: data.user.id,
-          email: data.user.email || '',
-          name: data.user.user_metadata?.name || 'Usuário',
-          role: (role as any) || null,
-        };
+        const { role: userRole } = await fetchUserRole(data.user.id);
+        const prof = await fetchProfile(data.user.id);
+        const userData = buildUser(data.user, userRole);
         setUser(userData);
+        setProfile(prof);
+        setRole(userRole);
 
-        // Redirecionar admin automaticamente
-        if (role === 'admin' || role === 'admin_programador') {
+        if (userRole === 'admin' || userRole === 'admin_programador') {
           navigate('/admin', { replace: true });
         }
       }
@@ -132,29 +151,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
-        options: {
-          data: { name },
-        },
+        options: { data: { name } },
       });
 
       if (error) return { error };
 
       if (data.user) {
-        // Criar registro de usuário com role de responsavel
         await supabase
-          .from('users_roles')
-          .insert({
-            user_id: data.user.id,
-            role: 'responsavel',
-          });
+          .from('user_roles')
+          .insert({ user_id: data.user.id, role: 'responsavel' as const });
 
-        const userData: User = {
-          id: data.user.id,
-          email: data.user.email || '',
-          name,
-          role: 'responsavel',
-        };
+        const userData = buildUser(data.user, 'responsavel');
         setUser(userData);
+        setRole('responsavel');
       }
 
       return {};
@@ -166,11 +175,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const signOut = async () => {
     await supabase.auth.signOut();
     setUser(null);
+    setProfile(null);
+    setRole(null);
     navigate('/auth', { replace: true });
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, signIn, signUp, signOut }}>
+    <AuthContext.Provider value={{ user, profile, role, loading, signIn, signUp, signOut }}>
       {children}
     </AuthContext.Provider>
   );
