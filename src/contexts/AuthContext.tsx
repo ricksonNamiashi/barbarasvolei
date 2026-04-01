@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import { createContext, useContext, useEffect, useState, useRef, ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -35,18 +35,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [role, setRole] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
+  const initialized = useRef(false);
 
   const fetchUserRole = async (userId: string) => {
     try {
-      const { data, error } = await supabase
+      const { data } = await supabase
         .from('user_roles')
         .select('role')
         .eq('user_id', userId)
         .maybeSingle();
-
-      return { role: data?.role ?? null, error };
-    } catch (err) {
-      return { role: null, error: err };
+      return data?.role ?? null;
+    } catch {
+      return null;
     }
   };
 
@@ -71,56 +71,66 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     created_at: sessionUser.created_at,
   });
 
+  const handleSession = async (sessionUser: any) => {
+    const userRole = await fetchUserRole(sessionUser.id);
+    const prof = await fetchProfile(sessionUser.id);
+    const userData = buildUser(sessionUser, userRole);
+
+    setUser(userData);
+    setProfile(prof);
+    setRole(userRole);
+
+    if (userRole === 'admin') {
+      navigate('/admin', { replace: true });
+    }
+  };
+
   useEffect(() => {
-    const checkSession = async () => {
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (session?.user) {
-          const { role: userRole } = await fetchUserRole(session.user.id);
-          const prof = await fetchProfile(session.user.id);
-          const userData = buildUser(session.user, userRole);
+    if (initialized.current) return;
+    initialized.current = true;
 
-          setUser(userData);
-          setProfile(prof);
-          setRole(userRole);
-
-          if (userRole === 'admin' || userRole === 'admin_programador') {
-            navigate('/admin', { replace: true });
-          }
-        }
-      } catch (error) {
-        console.error('Erro ao verificar sessão:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    checkSession();
-
+    // Set up listener FIRST (per Supabase best practices)
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        if (session?.user) {
-          const { role: userRole } = await fetchUserRole(session.user.id);
-          const prof = await fetchProfile(session.user.id);
-          const userData = buildUser(session.user, userRole);
-          setUser(userData);
-          setProfile(prof);
-          setRole(userRole);
-
-          if (userRole === 'admin' || userRole === 'admin_programador') {
-            navigate('/admin', { replace: true });
-          }
-        } else {
+        if (event === 'SIGNED_OUT' || !session?.user) {
           setUser(null);
           setProfile(null);
           setRole(null);
+          setLoading(false);
           navigate('/auth', { replace: true });
+          return;
+        }
+
+        if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+          // Use setTimeout to avoid Supabase deadlock
+          setTimeout(async () => {
+            await handleSession(session.user);
+            setLoading(false);
+          }, 0);
         }
       }
     );
 
-    return () => subscription?.unsubscribe();
-  }, [navigate]);
+    // Then check existing session
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
+      if (session?.user) {
+        await handleSession(session.user);
+      }
+      setLoading(false);
+    }).catch(() => {
+      setLoading(false);
+    });
+
+    // Safety timeout - never stay loading more than 5 seconds
+    const timeout = setTimeout(() => {
+      setLoading(false);
+    }, 5000);
+
+    return () => {
+      subscription?.unsubscribe();
+      clearTimeout(timeout);
+    };
+  }, []);
 
   const signIn = async (email: string, password: string) => {
     try {
@@ -128,16 +138,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       if (error) return { error };
 
       if (data.user) {
-        const { role: userRole } = await fetchUserRole(data.user.id);
-        const prof = await fetchProfile(data.user.id);
-        const userData = buildUser(data.user, userRole);
-        setUser(userData);
-        setProfile(prof);
-        setRole(userRole);
-
-        if (userRole === 'admin' || userRole === 'admin_programador') {
-          navigate('/admin', { replace: true });
-        }
+        await handleSession(data.user);
       }
 
       return {};
@@ -157,13 +158,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       if (error) return { error };
 
       if (data.user) {
-        await supabase
-          .from('user_roles')
-          .insert({ user_id: data.user.id, role: 'responsavel' as const });
-
-        const userData = buildUser(data.user, 'responsavel');
+        // The handle_new_user trigger already creates the role
+        const userData = buildUser(data.user, 'aluno');
         setUser(userData);
-        setRole('responsavel');
+        setRole('aluno');
       }
 
       return {};
