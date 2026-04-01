@@ -46,6 +46,7 @@ const AppContent = () => {
         <Route path="/admin/avisos" element={<ProtectedRoute requiredRole="admin"><AdminAvisos /></ProtectedRoute>} />
         <Route path="/admin/alunos" element={<ProtectedRoute requiredRole="admin"><AdminAlunos /></ProtectedRoute>} />
         <Route path="/admin/pagamentos" element={<ProtectedRoute requiredRole="admin"><AdminPagamentos /></ProtectedRoute>} />
+        <Route path="/auth" element={<Auth />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
       {!isAdmin && !isAuth && <BottomNav />}
