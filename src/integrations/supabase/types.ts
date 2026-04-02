@@ -122,6 +122,7 @@ export type Database = {
           id: string
           initials: string
           name: string
+          photo_url: string | null
           role: string
         }
         Insert: {
@@ -133,6 +134,7 @@ export type Database = {
           id?: string
           initials: string
           name: string
+          photo_url?: string | null
           role?: string
         }
         Update: {
@@ -144,6 +146,7 @@ export type Database = {
           id?: string
           initials?: string
           name?: string
+          photo_url?: string | null
           role?: string
         }
         Relationships: []
