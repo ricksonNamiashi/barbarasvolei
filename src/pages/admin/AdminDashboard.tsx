@@ -1,4 +1,4 @@
-import { Calendar, Bell, Users, CreditCard, ArrowRight, TrendingUp, DollarSign, AlertCircle, Clock, ShieldAlert, Send, Download, FileText } from "lucide-react";
+import { Calendar, Bell, Users, CreditCard, ArrowRight, TrendingUp, DollarSign, AlertCircle, Clock, ShieldAlert, Send, Download, FileText, GraduationCap } from "lucide-react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from "recharts";
@@ -47,6 +47,12 @@ const menuItems = [
     description: "Mensalidades e cobranças",
     icon: CreditCard,
     to: "/admin/pagamentos",
+  },
+  {
+    label: "Gerenciar Professores",
+    description: "Equipe técnica e treinadores",
+    icon: GraduationCap,
+    to: "/admin/professores",
   },
 ];
 
