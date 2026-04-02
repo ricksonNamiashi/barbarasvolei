@@ -20,6 +20,7 @@ import AdminAvisos from "./pages/admin/AdminAvisos";
 import AdminResponsaveis from "./pages/admin/AdminResponsaveis";
 import AdminAlunos from "./pages/admin/AdminAlunos";
 import AdminPagamentos from "./pages/admin/AdminPagamentos";
+import AdminProfessores from "./pages/admin/AdminProfessores";
 import NotFound from "./pages/NotFound";
 import DevRoleSwitcher from "@/components/DevRoleSwitcher";
 
