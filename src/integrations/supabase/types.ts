@@ -112,6 +112,42 @@ export type Database = {
         }
         Relationships: []
       }
+      professors: {
+        Row: {
+          bio: string | null
+          categories: string[] | null
+          created_at: string
+          experience: string | null
+          formation: string | null
+          id: string
+          initials: string
+          name: string
+          role: string
+        }
+        Insert: {
+          bio?: string | null
+          categories?: string[] | null
+          created_at?: string
+          experience?: string | null
+          formation?: string | null
+          id?: string
+          initials: string
+          name: string
+          role?: string
+        }
+        Update: {
+          bio?: string | null
+          categories?: string[] | null
+          created_at?: string
+          experience?: string | null
+          formation?: string | null
+          id?: string
+          initials?: string
+          name?: string
+          role?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
