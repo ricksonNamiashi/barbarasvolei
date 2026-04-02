@@ -11,6 +11,7 @@ export interface Professor {
   bio: string | null;
   initials: string;
   categories: string[];
+  photo_url: string | null;
   created_at: string;
 }
 
@@ -71,4 +72,20 @@ export const useDeleteProfessor = () => {
     },
     onError: () => toast({ title: "Erro ao remover professor", variant: "destructive" }),
   });
+};
+
+export const uploadProfessorPhoto = async (file: File, professorId: string): Promise<string> => {
+  const ext = file.name.split(".").pop() || "jpg";
+  const path = `${professorId}.${ext}`;
+
+  // Remove old photo if exists
+  await supabase.storage.from("professor-photos").remove([path]);
+
+  const { error } = await supabase.storage
+    .from("professor-photos")
+    .upload(path, file, { upsert: true });
+  if (error) throw error;
+
+  const { data } = supabase.storage.from("professor-photos").getPublicUrl(path);
+  return data.publicUrl;
 };

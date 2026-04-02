@@ -4,6 +4,7 @@ import Header from "@/components/Header";
 import PageTransition from "@/components/PageTransition";
 import { useProfessors } from "@/hooks/use-professors";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 
 const Professores = () => {
   const { data: professors = [], isLoading } = useProfessors();
@@ -27,9 +28,14 @@ const Professores = () => {
               >
                 <div className="gradient-hero p-4">
                   <div className="flex items-center gap-3">
-                    <div className="flex h-14 w-14 items-center justify-center rounded-full border-2 border-primary-foreground/30 bg-primary-foreground/20 font-display text-xl font-bold text-primary-foreground">
-                      {prof.initials}
-                    </div>
+                    <Avatar className="h-14 w-14 border-2 border-primary-foreground/30">
+                      {prof.photo_url ? (
+                        <AvatarImage src={prof.photo_url} alt={prof.name} />
+                      ) : null}
+                      <AvatarFallback className="bg-primary-foreground/20 font-display text-xl font-bold text-primary-foreground">
+                        {prof.initials}
+                      </AvatarFallback>
+                    </Avatar>
                     <div>
                       <h3 className="font-display text-lg font-bold text-primary-foreground">
                         {prof.name}

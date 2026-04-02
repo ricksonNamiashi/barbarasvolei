@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Plus, Pencil, Trash2, ArrowLeft, Save, X } from "lucide-react";
+import { useState, useRef } from "react";
+import { Plus, Pencil, Trash2, ArrowLeft, Save, X, Camera } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -24,8 +25,10 @@ import {
   useCreateProfessor,
   useUpdateProfessor,
   useDeleteProfessor,
+  uploadProfessorPhoto,
   Professor,
 } from "@/hooks/use-professors";
+import { toast } from "@/hooks/use-toast";
 
 interface ProfessorForm {
   name: string;
@@ -66,10 +69,16 @@ const AdminProfessores = () => {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [isAdding, setIsAdding] = useState(false);
   const [form, setForm] = useState<ProfessorForm>(emptyForm);
+  const [photoFile, setPhotoFile] = useState<File | null>(null);
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleEdit = (p: Professor) => {
     setEditingId(p.id);
     setForm(toForm(p));
+    setPhotoPreview(p.photo_url || null);
+    setPhotoFile(null);
     setIsAdding(false);
   };
 
@@ -77,9 +86,22 @@ const AdminProfessores = () => {
     setEditingId(null);
     setIsAdding(false);
     setForm(emptyForm);
+    setPhotoFile(null);
+    setPhotoPreview(null);
   };
 
-  const handleSave = () => {
+  const handlePhotoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+      toast({ title: "Imagem muito grande (máx 5MB)", variant: "destructive" });
+      return;
+    }
+    setPhotoFile(file);
+    setPhotoPreview(URL.createObjectURL(file));
+  };
+
+  const handleSave = async () => {
     const payload = {
       name: form.name.trim(),
       role: form.role.trim(),
@@ -95,10 +117,25 @@ const AdminProfessores = () => {
 
     if (!payload.name || !payload.initials) return;
 
-    if (editingId) {
-      updateMut.mutate({ id: editingId, ...payload }, { onSuccess: handleCancel });
-    } else {
-      createMut.mutate(payload, { onSuccess: handleCancel });
+    setUploading(true);
+    try {
+      if (editingId) {
+        let photo_url: string | undefined;
+        if (photoFile) {
+          photo_url = await uploadProfessorPhoto(photoFile, editingId);
+        }
+        await updateMut.mutateAsync({ id: editingId, ...payload, ...(photo_url ? { photo_url } : {}) });
+      } else {
+        // Create first, then upload photo
+        const tempId = crypto.randomUUID();
+        const photo_url = photoFile ? await uploadProfessorPhoto(photoFile, tempId) : null;
+        await createMut.mutateAsync({ ...payload, photo_url });
+      }
+      handleCancel();
+    } catch {
+      // Error already handled by mutation
+    } finally {
+      setUploading(false);
     }
   };
 
@@ -110,6 +147,14 @@ const AdminProfessores = () => {
   return (
     <PageTransition>
       <div className="space-y-4 p-4 pb-8">
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          className="hidden"
+          onChange={handlePhotoSelect}
+        />
+
         {/* Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -129,6 +174,8 @@ const AdminProfessores = () => {
                 setIsAdding(true);
                 setForm(emptyForm);
                 setEditingId(null);
+                setPhotoFile(null);
+                setPhotoPreview(null);
               }}
             >
               <Plus size={16} className="mr-1" /> Adicionar
@@ -151,6 +198,31 @@ const AdminProfessores = () => {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3">
+                  {/* Photo upload */}
+                  <div className="flex items-center gap-4">
+                    <button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      className="group relative flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-full border-2 border-dashed border-border bg-muted transition-colors hover:border-primary"
+                    >
+                      {photoPreview ? (
+                        <img
+                          src={photoPreview}
+                          alt="Preview"
+                          className="h-full w-full object-cover"
+                        />
+                      ) : (
+                        <Camera size={24} className="text-muted-foreground group-hover:text-primary" />
+                      )}
+                      <div className="absolute inset-0 flex items-center justify-center bg-background/60 opacity-0 transition-opacity group-hover:opacity-100">
+                        <Camera size={18} className="text-primary" />
+                      </div>
+                    </button>
+                    <p className="text-xs text-muted-foreground">
+                      Clique para adicionar uma foto do professor (máx 5MB)
+                    </p>
+                  </div>
+
                   <div className="grid grid-cols-3 gap-2">
                     <Input
                       placeholder="Iniciais"
@@ -196,9 +268,10 @@ const AdminProfessores = () => {
                     <Button
                       size="sm"
                       onClick={handleSave}
-                      disabled={createMut.isPending || updateMut.isPending}
+                      disabled={createMut.isPending || updateMut.isPending || uploading}
                     >
-                      <Save size={14} className="mr-1" /> Salvar
+                      <Save size={14} className="mr-1" />
+                      {uploading ? "Enviando..." : "Salvar"}
                     </Button>
                     <Button size="sm" variant="outline" onClick={handleCancel}>
                       <X size={14} className="mr-1" /> Cancelar
@@ -221,9 +294,14 @@ const AdminProfessores = () => {
           professors.map((p) => (
             <Card key={p.id}>
               <CardContent className="flex items-start gap-3 p-4">
-                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-primary/10 font-display text-sm font-bold text-primary">
-                  {p.initials}
-                </div>
+                <Avatar className="h-12 w-12 shrink-0">
+                  {p.photo_url ? (
+                    <AvatarImage src={p.photo_url} alt={p.name} />
+                  ) : null}
+                  <AvatarFallback className="bg-primary/10 font-display text-sm font-bold text-primary">
+                    {p.initials}
+                  </AvatarFallback>
+                </Avatar>
                 <div className="min-w-0 flex-1">
                   <p className="font-semibold text-card-foreground">{p.name}</p>
                   <p className="text-xs text-muted-foreground">{p.role}</p>
