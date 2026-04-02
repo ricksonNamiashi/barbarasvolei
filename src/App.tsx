@@ -20,6 +20,7 @@ import AdminAvisos from "./pages/admin/AdminAvisos";
 import AdminResponsaveis from "./pages/admin/AdminResponsaveis";
 import AdminAlunos from "./pages/admin/AdminAlunos";
 import AdminPagamentos from "./pages/admin/AdminPagamentos";
+import AdminProfessores from "./pages/admin/AdminProfessores";
 import NotFound from "./pages/NotFound";
 import DevRoleSwitcher from "@/components/DevRoleSwitcher";
 
@@ -46,6 +47,7 @@ const AppContent = () => {
         <Route path="/admin/avisos" element={<ProtectedRoute requiredRole="admin"><AdminAvisos /></ProtectedRoute>} />
         <Route path="/admin/alunos" element={<ProtectedRoute requiredRole="admin"><AdminAlunos /></ProtectedRoute>} />
         <Route path="/admin/pagamentos" element={<ProtectedRoute requiredRole="admin"><AdminPagamentos /></ProtectedRoute>} />
+        <Route path="/admin/professores" element={<ProtectedRoute requiredRole="admin"><AdminProfessores /></ProtectedRoute>} />
         <Route path="/auth" element={<Auth />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
