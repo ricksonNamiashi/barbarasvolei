@@ -1,6 +1,6 @@
-import { useState, useRef } from "react";
-import { Plus, Pencil, Trash2, ArrowLeft, Save, X, Camera } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
+import { useState, useRef, useCallback } from "react";
+import { Plus, Pencil, Trash2, ArrowLeft, Save, X, Camera, GripVertical } from "lucide-react";
+import { motion, AnimatePresence, Reorder } from "framer-motion";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -25,6 +25,7 @@ import {
   useCreateProfessor,
   useUpdateProfessor,
   useDeleteProfessor,
+  useReorderProfessors,
   uploadProfessorPhoto,
   Professor,
 } from "@/hooks/use-professors";
@@ -60,11 +61,84 @@ const toForm = (p: Professor): ProfessorForm => ({
   categories: (p.categories || []).join(", "),
 });
 
+const ProfessorCard = ({
+  prof,
+  onEdit,
+  onDelete,
+}: {
+  prof: Professor;
+  onEdit: (p: Professor) => void;
+  onDelete: (id: string) => void;
+}) => (
+  <Reorder.Item
+    value={prof}
+    id={prof.id}
+    className="cursor-grab active:cursor-grabbing"
+    whileDrag={{ scale: 1.02, boxShadow: "0 8px 25px rgba(0,0,0,0.15)" }}
+  >
+    <Card>
+      <CardContent className="flex items-start gap-3 p-4">
+        <div className="flex items-center self-center text-muted-foreground/50 touch-none">
+          <GripVertical size={18} />
+        </div>
+        <Avatar className="h-12 w-12 shrink-0">
+          {prof.photo_url ? <AvatarImage src={prof.photo_url} alt={prof.name} /> : null}
+          <AvatarFallback className="bg-primary/10 font-display text-sm font-bold text-primary">
+            {prof.initials}
+          </AvatarFallback>
+        </Avatar>
+        <div className="min-w-0 flex-1">
+          <p className="font-semibold text-card-foreground">{prof.name}</p>
+          <p className="text-xs text-muted-foreground">{prof.role}</p>
+          {prof.categories?.length > 0 && (
+            <div className="mt-1.5 flex flex-wrap gap-1">
+              {prof.categories.map((c) => (
+                <Badge key={c} variant="secondary" className="text-[10px]">
+                  {c}
+                </Badge>
+              ))}
+            </div>
+          )}
+        </div>
+        <div className="flex gap-1">
+          <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => onEdit(prof)}>
+            <Pencil size={14} />
+          </Button>
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button size="icon" variant="ghost" className="h-8 w-8 text-destructive">
+                <Trash2 size={14} />
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Remover professor?</AlertDialogTitle>
+                <AlertDialogDescription>Esta ação não pode ser desfeita.</AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                <AlertDialogAction onClick={() => onDelete(prof.id)}>Remover</AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </div>
+      </CardContent>
+    </Card>
+  </Reorder.Item>
+);
+
 const AdminProfessores = () => {
   const { data: professors = [], isLoading } = useProfessors();
   const createMut = useCreateProfessor();
   const updateMut = useUpdateProfessor();
   const deleteMut = useDeleteProfessor();
+  const reorderMut = useReorderProfessors();
+
+  const [orderedProfs, setOrderedProfs] = useState<Professor[]>([]);
+  const [hasLocalOrder, setHasLocalOrder] = useState(false);
+
+  // Sync server data to local state when not dragging
+  const displayProfs = hasLocalOrder ? orderedProfs : professors;
 
   const [editingId, setEditingId] = useState<string | null>(null);
   const [isAdding, setIsAdding] = useState(false);
@@ -73,6 +147,25 @@ const AdminProfessores = () => {
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleReorder = useCallback(
+    (newOrder: Professor[]) => {
+      setOrderedProfs(newOrder);
+      setHasLocalOrder(true);
+    },
+    []
+  );
+
+  const saveOrder = useCallback(() => {
+    if (!hasLocalOrder) return;
+    const ids = orderedProfs.map((p) => p.id);
+    reorderMut.mutate(ids, {
+      onSuccess: () => {
+        setHasLocalOrder(false);
+        toast({ title: "Ordem salva com sucesso" });
+      },
+    });
+  }, [hasLocalOrder, orderedProfs, reorderMut]);
 
   const handleEdit = (p: Professor) => {
     setEditingId(p.id);
@@ -102,6 +195,7 @@ const AdminProfessores = () => {
   };
 
   const handleSave = async () => {
+    const nextOrder = professors.length;
     const payload = {
       name: form.name.trim(),
       role: form.role.trim(),
@@ -126,21 +220,19 @@ const AdminProfessores = () => {
         }
         await updateMut.mutateAsync({ id: editingId, ...payload, ...(photo_url ? { photo_url } : {}) });
       } else {
-        // Create first, then upload photo
         const tempId = crypto.randomUUID();
         const photo_url = photoFile ? await uploadProfessorPhoto(photoFile, tempId) : null;
-        await createMut.mutateAsync({ ...payload, photo_url });
+        await createMut.mutateAsync({ ...payload, photo_url, display_order: nextOrder });
       }
       handleCancel();
     } catch {
-      // Error already handled by mutation
+      // Error handled by mutation
     } finally {
       setUploading(false);
     }
   };
 
-  const set = (key: keyof ProfessorForm, val: string) =>
-    setForm((f) => ({ ...f, [key]: val }));
+  const set = (key: keyof ProfessorForm, val: string) => setForm((f) => ({ ...f, [key]: val }));
 
   const isFormOpen = isAdding || editingId;
 
@@ -163,24 +255,35 @@ const AdminProfessores = () => {
                 <ArrowLeft size={20} />
               </Button>
             </Link>
-            <h1 className="font-display text-xl font-bold text-foreground">
-              Professores
-            </h1>
+            <h1 className="font-display text-xl font-bold text-foreground">Professores</h1>
           </div>
-          {!isFormOpen && (
-            <Button
-              size="sm"
-              onClick={() => {
-                setIsAdding(true);
-                setForm(emptyForm);
-                setEditingId(null);
-                setPhotoFile(null);
-                setPhotoPreview(null);
-              }}
-            >
-              <Plus size={16} className="mr-1" /> Adicionar
-            </Button>
-          )}
+          <div className="flex gap-2">
+            {hasLocalOrder && (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={saveOrder}
+                disabled={reorderMut.isPending}
+              >
+                <Save size={14} className="mr-1" />
+                {reorderMut.isPending ? "Salvando..." : "Salvar ordem"}
+              </Button>
+            )}
+            {!isFormOpen && (
+              <Button
+                size="sm"
+                onClick={() => {
+                  setIsAdding(true);
+                  setForm(emptyForm);
+                  setEditingId(null);
+                  setPhotoFile(null);
+                  setPhotoPreview(null);
+                }}
+              >
+                <Plus size={16} className="mr-1" /> Adicionar
+              </Button>
+            )}
+          </div>
         </div>
 
         {/* Form */}
@@ -206,11 +309,7 @@ const AdminProfessores = () => {
                       className="group relative flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-full border-2 border-dashed border-border bg-muted transition-colors hover:border-primary"
                     >
                       {photoPreview ? (
-                        <img
-                          src={photoPreview}
-                          alt="Preview"
-                          className="h-full w-full object-cover"
-                        />
+                        <img src={photoPreview} alt="Preview" className="h-full w-full object-cover" />
                       ) : (
                         <Camera size={24} className="text-muted-foreground group-hover:text-primary" />
                       )}
@@ -283,78 +382,35 @@ const AdminProfessores = () => {
           )}
         </AnimatePresence>
 
-        {/* List */}
+        {/* Reorderable list */}
         {isLoading ? (
           <p className="text-center text-sm text-muted-foreground">Carregando...</p>
-        ) : professors.length === 0 ? (
+        ) : displayProfs.length === 0 ? (
           <p className="text-center text-sm text-muted-foreground">
             Nenhum professor cadastrado.
           </p>
         ) : (
-          professors.map((p) => (
-            <Card key={p.id}>
-              <CardContent className="flex items-start gap-3 p-4">
-                <Avatar className="h-12 w-12 shrink-0">
-                  {p.photo_url ? (
-                    <AvatarImage src={p.photo_url} alt={p.name} />
-                  ) : null}
-                  <AvatarFallback className="bg-primary/10 font-display text-sm font-bold text-primary">
-                    {p.initials}
-                  </AvatarFallback>
-                </Avatar>
-                <div className="min-w-0 flex-1">
-                  <p className="font-semibold text-card-foreground">{p.name}</p>
-                  <p className="text-xs text-muted-foreground">{p.role}</p>
-                  {p.categories?.length > 0 && (
-                    <div className="mt-1.5 flex flex-wrap gap-1">
-                      {p.categories.map((c) => (
-                        <Badge key={c} variant="secondary" className="text-[10px]">
-                          {c}
-                        </Badge>
-                      ))}
-                    </div>
-                  )}
-                </div>
-                <div className="flex gap-1">
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    className="h-8 w-8"
-                    onClick={() => handleEdit(p)}
-                  >
-                    <Pencil size={14} />
-                  </Button>
-                  <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        className="h-8 w-8 text-destructive"
-                      >
-                        <Trash2 size={14} />
-                      </Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>Remover professor?</AlertDialogTitle>
-                        <AlertDialogDescription>
-                          Esta ação não pode ser desfeita.
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                        <AlertDialogAction
-                          onClick={() => deleteMut.mutate(p.id)}
-                        >
-                          Remover
-                        </AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
-                </div>
-              </CardContent>
-            </Card>
-          ))
+          <>
+            <p className="text-xs text-muted-foreground">
+              <GripVertical size={12} className="mr-1 inline" />
+              Arraste para reordenar
+            </p>
+            <Reorder.Group
+              axis="y"
+              values={displayProfs}
+              onReorder={handleReorder}
+              className="space-y-3"
+            >
+              {displayProfs.map((p) => (
+                <ProfessorCard
+                  key={p.id}
+                  prof={p}
+                  onEdit={handleEdit}
+                  onDelete={(id) => deleteMut.mutate(id)}
+                />
+              ))}
+            </Reorder.Group>
+          </>
         )}
       </div>
     </PageTransition>
