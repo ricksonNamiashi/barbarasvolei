@@ -1,4 +1,4 @@
-import { Calendar, Bell, Users, CreditCard, ArrowRight, TrendingUp, DollarSign, AlertCircle, Clock, ShieldAlert, Send, Download, FileText, GraduationCap, Activity, Zap } from "lucide-react";
+import { Calendar, Bell, Users, CreditCard, ArrowRight, TrendingUp, DollarSign, AlertCircle, Clock, ShieldAlert, Send, Download, FileText, GraduationCap, Activity, Zap, Moon, Sun } from "lucide-react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
@@ -11,6 +11,7 @@ import { useSchedules } from "@/hooks/use-schedules";
 import { useTriggerOverdueNotifications } from "@/hooks/use-notifications";
 import { useToast } from "@/hooks/use-toast";
 import { useMemo, useState } from "react";
+import { useTheme } from "@/contexts/ThemeContext";
 import { exportCSV, exportPDF } from "@/utils/export-financial-report";
 import {
   Select,
@@ -70,6 +71,7 @@ const AdminDashboard = () => {
   const { data: schedules = [] } = useSchedules();
   const triggerNotifications = useTriggerOverdueNotifications();
   const { toast } = useToast();
+  const { theme, toggleTheme } = useTheme();
 
   const activeStudents = students.filter((s) => s.status === "Ativo").length;
   const pendingPayments = payments.filter((p) => p.status === "pending").length;
@@ -156,7 +158,14 @@ const AdminDashboard = () => {
                 </div>
               </div>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5">
+              <button
+                onClick={toggleTheme}
+                className="flex h-8 w-8 items-center justify-center rounded-lg bg-muted text-muted-foreground transition-all hover:bg-muted/80 active:scale-90"
+                title={theme === "dark" ? "Modo claro" : "Modo escuro"}
+              >
+                {theme === "dark" ? <Sun size={16} /> : <Moon size={16} />}
+              </button>
               <NotificationBell />
               <button
                 onClick={() => navigate("/")}
