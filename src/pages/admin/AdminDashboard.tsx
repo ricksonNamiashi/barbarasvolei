@@ -11,6 +11,7 @@ import { useSchedules } from "@/hooks/use-schedules";
 import { useTriggerOverdueNotifications } from "@/hooks/use-notifications";
 import { useToast } from "@/hooks/use-toast";
 import { useMemo, useState } from "react";
+import { useTheme } from "@/contexts/ThemeContext";
 import { exportCSV, exportPDF } from "@/utils/export-financial-report";
 import {
   Select,
