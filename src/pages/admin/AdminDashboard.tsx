@@ -71,6 +71,7 @@ const AdminDashboard = () => {
   const { data: schedules = [] } = useSchedules();
   const triggerNotifications = useTriggerOverdueNotifications();
   const { toast } = useToast();
+  const { theme, toggleTheme } = useTheme();
 
   const activeStudents = students.filter((s) => s.status === "Ativo").length;
   const pendingPayments = payments.filter((p) => p.status === "pending").length;
