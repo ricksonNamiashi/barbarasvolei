@@ -158,7 +158,14 @@ const AdminDashboard = () => {
                 </div>
               </div>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5">
+              <button
+                onClick={toggleTheme}
+                className="flex h-8 w-8 items-center justify-center rounded-lg bg-muted text-muted-foreground transition-all hover:bg-muted/80 active:scale-90"
+                title={theme === "dark" ? "Modo claro" : "Modo escuro"}
+              >
+                {theme === "dark" ? <Sun size={16} /> : <Moon size={16} />}
+              </button>
               <NotificationBell />
               <button
                 onClick={() => navigate("/")}
