@@ -1,7 +1,7 @@
-import { Calendar, Bell, Users, CreditCard, ArrowRight, TrendingUp, DollarSign, AlertCircle, Clock, ShieldAlert, Send, Download, FileText, GraduationCap } from "lucide-react";
+import { Calendar, Bell, Users, CreditCard, ArrowRight, TrendingUp, DollarSign, AlertCircle, Clock, ShieldAlert, Send, Download, FileText, GraduationCap, Activity, Zap } from "lucide-react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from "recharts";
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 import PageTransition from "@/components/PageTransition";
 import NotificationBell from "@/components/NotificationBell";
 import { useAllPayments } from "@/hooks/use-payments-admin";
@@ -29,30 +29,35 @@ const menuItems = [
     description: "Criar, editar e remover treinos",
     icon: Calendar,
     to: "/admin/horarios",
+    gradient: "from-primary/20 to-secondary/10",
   },
   {
     label: "Gerenciar Avisos",
     description: "Enviar comunicados e alertas",
     icon: Bell,
     to: "/admin/avisos",
+    gradient: "from-accent/20 to-primary/10",
   },
   {
     label: "Gerenciar Alunos",
     description: "Cadastro e informações de alunos",
     icon: Users,
     to: "/admin/alunos",
+    gradient: "from-secondary/20 to-accent/10",
   },
   {
     label: "Gerenciar Pagamentos",
     description: "Mensalidades e cobranças",
     icon: CreditCard,
     to: "/admin/pagamentos",
+    gradient: "from-primary/15 to-accent/15",
   },
   {
     label: "Gerenciar Professores",
     description: "Equipe técnica e treinadores",
     icon: GraduationCap,
     to: "/admin/professores",
+    gradient: "from-accent/15 to-secondary/15",
   },
 ];
 
@@ -71,10 +76,10 @@ const AdminDashboard = () => {
   const overduePayments = payments.filter((p) => p.status === "overdue").length;
 
   const stats = [
-    { label: "Alunos Ativos", value: String(activeStudents), icon: Users, color: "text-primary" },
-    { label: "Treinos/Semana", value: String(schedules.length), icon: Calendar, color: "text-secondary" },
-    { label: "Pendentes", value: String(pendingPayments), icon: Clock, color: "text-primary" },
-    { label: "Atrasados", value: String(overduePayments), icon: AlertCircle, color: "text-destructive" },
+    { label: "Alunos Ativos", value: String(activeStudents), icon: Users, color: "text-primary", bgGradient: "from-primary/15 to-primary/5", iconBg: "bg-primary/20" },
+    { label: "Treinos/Semana", value: String(schedules.length), icon: Activity, color: "text-secondary", bgGradient: "from-secondary/15 to-secondary/5", iconBg: "bg-secondary/20" },
+    { label: "Pendentes", value: String(pendingPayments), icon: Clock, color: "text-accent", bgGradient: "from-accent/15 to-accent/5", iconBg: "bg-accent/20" },
+    { label: "Atrasados", value: String(overduePayments), icon: AlertCircle, color: "text-destructive", bgGradient: "from-destructive/15 to-destructive/5", iconBg: "bg-destructive/20" },
   ];
 
   // Financial summary
@@ -92,7 +97,6 @@ const AdminDashboard = () => {
     const totalCount = payments.length;
     const delinquencyRate = totalCount > 0 ? (overdueCount / totalCount) * 100 : 0;
 
-    // Group by month for chart
     const monthMap = new Map<string, { paid: number; pending: number }>();
     payments.forEach((p) => {
       const key = p.month;
@@ -112,28 +116,16 @@ const AdminDashboard = () => {
     return { totalReceived, totalPending, overdueTotal, overdueCount, delinquencyRate, chartData };
   }, [payments]);
 
-  // Filter payments by selected period for export
   const filteredPayments = useMemo(() => {
     if (exportPeriod === "all") return payments;
     const now = new Date();
-    const currentMonth = now.getMonth(); // 0-indexed
+    const currentMonth = now.getMonth();
     const currentYear = now.getFullYear();
-
-    // Build list of "Month YYYY" strings to match
-    const periodsMap: Record<string, number> = {
-      "1m": 1,
-      "3m": 3,
-      "6m": 6,
-      "12m": 12,
-    };
+    const periodsMap: Record<string, number> = { "1m": 1, "3m": 3, "6m": 6, "12m": 12 };
     const months = periodsMap[exportPeriod] ?? 0;
     if (months === 0) return payments;
-
     const cutoff = new Date(currentYear, currentMonth - months + 1, 1);
-    return payments.filter((p) => {
-      const dueDate = new Date(p.due_date);
-      return dueDate >= cutoff;
-    });
+    return payments.filter((p) => new Date(p.due_date) >= cutoff);
   }, [payments, exportPeriod]);
 
   const filteredFinancial = useMemo(() => {
@@ -147,54 +139,75 @@ const AdminDashboard = () => {
 
   return (
     <PageTransition>
-      <header className="sticky top-0 z-40 border-b border-border bg-card/90 backdrop-blur-lg">
-        <div className="flex items-center justify-between px-4 py-3">
-          <div>
-            <h1 className="font-display text-lg font-bold text-foreground">Painel Admin</h1>
-            <p className="text-xs text-muted-foreground">Gestão da escola</p>
+      {/* Header with gradient accent */}
+      <header className="sticky top-0 z-40 border-b border-border bg-card/95 backdrop-blur-xl">
+        <div className="relative overflow-hidden">
+          {/* Subtle gradient accent line */}
+          <div className="absolute inset-x-0 bottom-0 h-[2px] gradient-hero opacity-60" />
+          <div className="flex items-center justify-between px-4 py-3">
+            <div>
+              <div className="flex items-center gap-2">
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg gradient-hero shadow-md">
+                  <Zap size={16} className="text-primary-foreground" />
+                </div>
+                <div>
+                  <h1 className="font-display text-lg font-bold text-foreground tracking-tight">Painel Admin</h1>
+                  <p className="text-[10px] text-muted-foreground font-medium">Gestão da escola</p>
+                </div>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <NotificationBell />
+              <button
+                onClick={() => navigate("/")}
+                className="flex h-8 items-center gap-1.5 rounded-lg bg-primary/10 px-3 text-xs font-semibold text-primary transition-all hover:bg-primary/20 active:scale-95"
+              >
+                Ver App
+              </button>
+            </div>
           </div>
-          <NotificationBell />
-          <button
-            onClick={() => navigate("/")}
-            className="flex h-9 items-center gap-1 rounded-lg bg-primary/10 px-3 text-xs font-medium text-primary"
-          >
-            Ver App
-          </button>
         </div>
       </header>
 
-      <main className="space-y-6 px-4 pb-24 pt-4">
-        {/* Stats Grid */}
+      <main className="space-y-5 px-4 pb-24 pt-4">
+        {/* Stats Grid - Enhanced */}
         <div className="grid grid-cols-2 gap-3">
           {stats.map((stat, i) => (
             <motion.div
               key={stat.label}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.08 }}
-              className="rounded-xl border border-border bg-card p-4 shadow-card"
+              initial={{ opacity: 0, y: 16, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              transition={{ delay: i * 0.08, type: "spring", stiffness: 200 }}
+              className={`relative overflow-hidden rounded-2xl border border-border bg-gradient-to-br ${stat.bgGradient} p-4 shadow-card`}
             >
-              <stat.icon size={18} className={stat.color} />
-              <p className="mt-2 font-display text-2xl font-bold text-foreground">{stat.value}</p>
-              <p className="text-[10px] font-medium text-muted-foreground">{stat.label}</p>
+              {/* Decorative circle */}
+              <div className="absolute -right-3 -top-3 h-16 w-16 rounded-full bg-gradient-to-br from-background/40 to-transparent" />
+              <div className={`flex h-9 w-9 items-center justify-center rounded-xl ${stat.iconBg} mb-2`}>
+                <stat.icon size={18} className={stat.color} />
+              </div>
+              <p className="font-display text-3xl font-bold text-foreground leading-none">{stat.value}</p>
+              <p className="text-[10px] font-semibold text-muted-foreground mt-1 uppercase tracking-wider">{stat.label}</p>
             </motion.div>
           ))}
         </div>
 
-        {/* Financial Summary */}
+        {/* Financial Summary - Enhanced */}
         <motion.section
-          initial={{ opacity: 0, y: 15 }}
+          initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.35 }}
+          transition={{ delay: 0.35, type: "spring", stiffness: 150 }}
+          className="space-y-3"
         >
-          <div className="mb-3 flex items-center justify-between">
+          <div className="flex items-center justify-between">
             <h3 className="font-display text-base font-bold text-foreground flex items-center gap-2">
-              <TrendingUp size={18} className="text-primary" />
+              <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary/15">
+                <TrendingUp size={14} className="text-primary" />
+              </div>
               Resumo Financeiro
             </h3>
             <div className="flex items-center gap-1.5">
               <Select value={exportPeriod} onValueChange={setExportPeriod}>
-                <SelectTrigger className="h-7 w-[90px] text-[10px] border-border">
+                <SelectTrigger className="h-7 w-[90px] text-[10px] border-border rounded-lg">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -207,54 +220,85 @@ const AdminDashboard = () => {
               </Select>
               <button
                 onClick={() => exportCSV(filteredPayments)}
-                className="flex items-center gap-1 rounded-lg bg-muted px-2.5 py-1.5 text-[10px] font-medium text-muted-foreground transition-colors hover:bg-muted/80 active:scale-95"
+                className="flex items-center gap-1 rounded-lg bg-muted px-2.5 py-1.5 text-[10px] font-semibold text-muted-foreground transition-all hover:bg-muted/80 active:scale-95"
               >
                 <Download size={12} /> CSV
               </button>
               <button
                 onClick={() => exportPDF(filteredPayments, filteredFinancial)}
-                className="flex items-center gap-1 rounded-lg bg-primary/10 px-2.5 py-1.5 text-[10px] font-medium text-primary transition-colors hover:bg-primary/15 active:scale-95"
+                className="flex items-center gap-1 rounded-lg bg-primary/10 px-2.5 py-1.5 text-[10px] font-semibold text-primary transition-all hover:bg-primary/20 active:scale-95"
               >
                 <FileText size={12} /> PDF
               </button>
             </div>
           </div>
 
-          <div className="grid grid-cols-3 gap-3 mb-4">
-            <div className="rounded-xl border border-border bg-card p-3 shadow-card">
-              <div className="flex items-center gap-1.5 mb-1">
-                <DollarSign size={12} className="text-green-600" />
-                <span className="text-[10px] font-medium text-muted-foreground">Recebido</span>
+          {/* Financial cards with improved styling */}
+          <div className="grid grid-cols-3 gap-2">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.4 }}
+              className="relative overflow-hidden rounded-2xl border border-border bg-card p-3 shadow-card"
+            >
+              <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-green-500 to-green-400 opacity-80" />
+              <div className="flex items-center gap-1.5 mb-1.5">
+                <div className="flex h-5 w-5 items-center justify-center rounded-md bg-green-500/15">
+                  <DollarSign size={10} className="text-green-600" />
+                </div>
+                <span className="text-[9px] font-semibold text-muted-foreground uppercase tracking-wider">Recebido</span>
               </div>
-              <p className="font-display text-base font-bold text-green-600">
+              <p className="font-display text-sm font-bold text-green-600 leading-tight">
                 {formatCurrency(financial.totalReceived)}
               </p>
-            </div>
-            <div className="rounded-xl border border-border bg-card p-3 shadow-card">
-              <div className="flex items-center gap-1.5 mb-1">
-                <Clock size={12} className="text-primary" />
-                <span className="text-[10px] font-medium text-muted-foreground">A receber</span>
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.45 }}
+              className="relative overflow-hidden rounded-2xl border border-border bg-card p-3 shadow-card"
+            >
+              <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-primary to-secondary opacity-80" />
+              <div className="flex items-center gap-1.5 mb-1.5">
+                <div className="flex h-5 w-5 items-center justify-center rounded-md bg-primary/15">
+                  <Clock size={10} className="text-primary" />
+                </div>
+                <span className="text-[9px] font-semibold text-muted-foreground uppercase tracking-wider">A receber</span>
               </div>
-              <p className="font-display text-base font-bold text-primary">
+              <p className="font-display text-sm font-bold text-primary leading-tight">
                 {formatCurrency(financial.totalPending)}
               </p>
-            </div>
-            <div className="rounded-xl border border-border bg-card p-3 shadow-card">
-              <div className="flex items-center gap-1.5 mb-1">
-                <ShieldAlert size={12} className="text-destructive" />
-                <span className="text-[10px] font-medium text-muted-foreground">Inadimplência</span>
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.5 }}
+              className="relative overflow-hidden rounded-2xl border border-border bg-card p-3 shadow-card"
+            >
+              <div className={`absolute inset-x-0 top-0 h-1 ${financial.delinquencyRate > 0 ? "bg-gradient-to-r from-destructive to-red-400" : "bg-gradient-to-r from-green-500 to-green-400"} opacity-80`} />
+              <div className="flex items-center gap-1.5 mb-1.5">
+                <div className={`flex h-5 w-5 items-center justify-center rounded-md ${financial.delinquencyRate > 0 ? "bg-destructive/15" : "bg-green-500/15"}`}>
+                  <ShieldAlert size={10} className={financial.delinquencyRate > 0 ? "text-destructive" : "text-green-600"} />
+                </div>
+                <span className="text-[9px] font-semibold text-muted-foreground uppercase tracking-wider">Inadimpl.</span>
               </div>
-              <p className={`font-display text-base font-bold ${financial.delinquencyRate > 0 ? "text-destructive" : "text-green-600"}`}>
+              <p className={`font-display text-sm font-bold leading-tight ${financial.delinquencyRate > 0 ? "text-destructive" : "text-green-600"}`}>
                 {financial.delinquencyRate.toFixed(1)}%
               </p>
-              <p className="text-[9px] text-muted-foreground mt-0.5">
+              <p className="text-[8px] text-muted-foreground mt-0.5">
                 {financial.overdueCount} de {payments.length}
               </p>
-            </div>
+            </motion.div>
           </div>
 
+          {/* Overdue notification button */}
           {financial.overdueCount > 0 && (
-            <button
+            <motion.button
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.55 }}
               onClick={async () => {
                 try {
                   const result = await triggerNotifications.mutateAsync();
@@ -267,23 +311,41 @@ const AdminDashboard = () => {
                 }
               }}
               disabled={triggerNotifications.isPending}
-              className="flex w-full items-center justify-center gap-2 rounded-xl border border-destructive/30 bg-destructive/5 p-3 text-xs font-semibold text-destructive transition-colors active:bg-destructive/10 disabled:opacity-50"
+              className="flex w-full items-center justify-center gap-2 rounded-2xl border border-destructive/20 bg-gradient-to-r from-destructive/10 to-destructive/5 p-3.5 text-xs font-bold text-destructive transition-all active:scale-[0.98] disabled:opacity-50"
             >
               <Send size={14} />
               {triggerNotifications.isPending
                 ? "Enviando..."
                 : `Notificar ${financial.overdueCount} inadimplentes`}
-            </button>
+            </motion.button>
           )}
-          {/* Chart */}
+
+          {/* Chart - Enhanced */}
           {financial.chartData.length > 0 && (
-            <div className="rounded-xl border border-border bg-card p-4 shadow-card">
-              <p className="text-xs font-semibold text-muted-foreground mb-3">Pagamentos por Mês</p>
-              <ResponsiveContainer width="100%" height={180}>
+            <motion.div
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.6 }}
+              className="rounded-2xl border border-border bg-card p-4 shadow-card"
+            >
+              <div className="flex items-center justify-between mb-3">
+                <p className="text-xs font-bold text-foreground">Pagamentos por Mês</p>
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-1.5">
+                    <div className="h-2 w-2 rounded-full" style={{ backgroundColor: "hsl(142, 71%, 45%)" }} />
+                    <span className="text-[9px] text-muted-foreground font-medium">Pago</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <div className="h-2 w-2 rounded-full bg-primary" />
+                    <span className="text-[9px] text-muted-foreground font-medium">Pendente</span>
+                  </div>
+                </div>
+              </div>
+              <ResponsiveContainer width="100%" height={160}>
                 <BarChart data={financial.chartData} barGap={2}>
                   <XAxis
                     dataKey="month"
-                    tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }}
+                    tick={{ fontSize: 9, fill: "hsl(var(--muted-foreground))" }}
                     axisLine={false}
                     tickLine={false}
                     tickFormatter={(v: string) => {
@@ -296,54 +358,51 @@ const AdminDashboard = () => {
                     contentStyle={{
                       backgroundColor: "hsl(var(--card))",
                       border: "1px solid hsl(var(--border))",
-                      borderRadius: 8,
-                      fontSize: 12,
+                      borderRadius: 12,
+                      fontSize: 11,
+                      boxShadow: "0 8px 24px -8px hsl(var(--foreground) / 0.1)",
                     }}
                     formatter={(value: number, name: string) => [
                       formatCurrency(value),
                       name === "paid" ? "Pago" : "Pendente",
                     ]}
-                    labelStyle={{ fontWeight: 600, color: "hsl(var(--foreground))" }}
+                    labelStyle={{ fontWeight: 700, color: "hsl(var(--foreground))" }}
+                    cursor={{ fill: "hsl(var(--muted) / 0.4)" }}
                   />
-                  <Bar dataKey="paid" stackId="a" radius={[0, 0, 0, 0]} fill="hsl(142, 71%, 45%)" name="paid" />
-                  <Bar dataKey="pending" stackId="a" radius={[4, 4, 0, 0]} fill="hsl(var(--primary))" name="pending" />
+                  <Bar dataKey="paid" stackId="a" radius={[0, 0, 4, 4]} fill="hsl(142, 71%, 45%)" name="paid" />
+                  <Bar dataKey="pending" stackId="a" radius={[6, 6, 0, 0]} fill="hsl(var(--primary))" name="pending" />
                 </BarChart>
               </ResponsiveContainer>
-              <div className="flex items-center justify-center gap-4 mt-2">
-                <div className="flex items-center gap-1.5">
-                  <div className="h-2.5 w-2.5 rounded-sm" style={{ backgroundColor: "hsl(142, 71%, 45%)" }} />
-                  <span className="text-[10px] text-muted-foreground">Pago</span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <div className="h-2.5 w-2.5 rounded-sm bg-primary" />
-                  <span className="text-[10px] text-muted-foreground">Pendente</span>
-                </div>
-              </div>
-            </div>
+            </motion.div>
           )}
         </motion.section>
 
-        {/* Menu */}
+        {/* Menu - Enhanced */}
         <section>
-          <h3 className="mb-3 font-display text-base font-bold text-foreground">Gerenciamento</h3>
+          <h3 className="mb-3 font-display text-base font-bold text-foreground flex items-center gap-2">
+            <div className="h-5 w-1 rounded-full gradient-hero" />
+            Gerenciamento
+          </h3>
           <div className="space-y-2">
             {menuItems.map((item, i) => (
               <motion.button
                 key={item.to}
-                initial={{ opacity: 0, x: -15 }}
+                initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.5 + i * 0.08 }}
+                transition={{ delay: 0.5 + i * 0.07, type: "spring", stiffness: 200 }}
                 onClick={() => navigate(item.to)}
-                className="flex w-full items-center gap-3 rounded-xl border border-border bg-card p-4 shadow-card transition-transform active:scale-[0.98]"
+                className={`group flex w-full items-center gap-3 rounded-2xl border border-border bg-gradient-to-r ${item.gradient} p-4 shadow-card transition-all active:scale-[0.97] hover:shadow-elevated`}
               >
-                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
-                  <item.icon size={20} className="text-primary" />
+                <div className="flex h-11 w-11 items-center justify-center rounded-xl gradient-hero shadow-md transition-transform group-active:scale-95">
+                  <item.icon size={20} className="text-primary-foreground" />
                 </div>
                 <div className="flex-1 text-left">
-                  <p className="text-sm font-semibold text-card-foreground">{item.label}</p>
-                  <p className="text-xs text-muted-foreground">{item.description}</p>
+                  <p className="text-sm font-bold text-card-foreground">{item.label}</p>
+                  <p className="text-[11px] text-muted-foreground">{item.description}</p>
                 </div>
-                <ArrowRight size={16} className="text-muted-foreground" />
+                <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-background/60 transition-transform group-hover:translate-x-0.5">
+                  <ArrowRight size={14} className="text-muted-foreground" />
+                </div>
               </motion.button>
             ))}
           </div>
