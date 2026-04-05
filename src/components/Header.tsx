@@ -43,6 +43,13 @@ const Header = ({ title, subtitle }: HeaderProps) => {
             {roleLabels[role] || role}
           </Badge>
         )}
+        <button
+          onClick={toggleTheme}
+          className="flex h-9 w-9 items-center justify-center rounded-full bg-muted transition-colors active:bg-muted/80"
+          aria-label="Alternar tema"
+        >
+          {theme === "dark" ? <Sun size={18} className="text-accent" /> : <Moon size={18} className="text-muted-foreground" />}
+        </button>
         <NotificationBell />
         <button
           onClick={() => navigate("/perfil")}
