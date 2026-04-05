@@ -20,6 +20,7 @@ const roleLabels: Record<string, string> = {
 const Header = ({ title, subtitle }: HeaderProps) => {
   const navigate = useNavigate();
   const { profile, role, signOut } = useAuth();
+  const { theme, toggleTheme } = useTheme();
 
   return (
     <header className="sticky top-0 z-40 border-b border-border bg-card/90 backdrop-blur-lg">
