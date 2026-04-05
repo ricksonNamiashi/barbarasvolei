@@ -1,7 +1,8 @@
 import { useNavigate } from "react-router-dom";
-import { User, LogOut } from "lucide-react";
+import { User, LogOut, Sun, Moon } from "lucide-react";
 import logoAbv from "@/assets/logo-abv.jpg";
 import { useAuth } from "@/contexts/AuthContext";
+import { useTheme } from "@/contexts/ThemeContext";
 import { Badge } from "@/components/ui/badge";
 import NotificationBell from "@/components/NotificationBell";
 
@@ -19,6 +20,7 @@ const roleLabels: Record<string, string> = {
 const Header = ({ title, subtitle }: HeaderProps) => {
   const navigate = useNavigate();
   const { profile, role, signOut } = useAuth();
+  const { theme, toggleTheme } = useTheme();
 
   return (
     <header className="sticky top-0 z-40 border-b border-border bg-card/90 backdrop-blur-lg">
@@ -41,6 +43,13 @@ const Header = ({ title, subtitle }: HeaderProps) => {
             {roleLabels[role] || role}
           </Badge>
         )}
+        <button
+          onClick={toggleTheme}
+          className="flex h-9 w-9 items-center justify-center rounded-full bg-muted transition-colors active:bg-muted/80"
+          aria-label="Alternar tema"
+        >
+          {theme === "dark" ? <Sun size={18} className="text-accent" /> : <Moon size={18} className="text-muted-foreground" />}
+        </button>
         <NotificationBell />
         <button
           onClick={() => navigate("/perfil")}
