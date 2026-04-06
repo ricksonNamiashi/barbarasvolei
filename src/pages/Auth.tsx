@@ -82,6 +82,14 @@ const Auth = () => {
 
   return (
     <div className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden bg-background">
+      {/* Theme toggle */}
+      <button
+        onClick={toggleTheme}
+        className="absolute right-4 top-4 z-20 rounded-full border border-border/60 bg-card/80 p-2.5 text-muted-foreground backdrop-blur-sm transition-colors hover:text-foreground"
+        aria-label="Alternar tema"
+      >
+        {theme === "dark" ? <Sun size={18} /> : <Moon size={18} />}
+      </button>
       {/* Animated background elements */}
       <div className="pointer-events-none absolute inset-0">
         {/* Gradient overlay */}
