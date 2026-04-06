@@ -44,6 +44,7 @@ const Auth = () => {
   const [shakeForm, setShakeForm] = useState(false);
   const { signIn, signUp } = useAuth();
   const { toast } = useToast();
+  const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
