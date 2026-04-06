@@ -1,6 +1,7 @@
 import { useLocation, useNavigate } from "react-router-dom";
-import { Home, Calendar, Users, Bell, Phone } from "lucide-react";
+import { Home, Calendar, Users, Bell, Phone, Shield } from "lucide-react";
 import { motion } from "framer-motion";
+import { useAuth } from "@/contexts/AuthContext";
 
 const navItems = [
   { path: "/", icon: Home, label: "Início" },
@@ -13,11 +14,16 @@ const navItems = [
 const BottomNav = () => {
   const location = useLocation();
   const navigate = useNavigate();
+  const { role } = useAuth();
+
+  const items = role === "admin"
+    ? [...navItems, { path: "/admin", icon: Shield, label: "Admin" }]
+    : navItems;
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-card/95 backdrop-blur-lg safe-bottom">
       <div className="flex items-center justify-around px-2 py-1">
-        {navItems.map((item) => {
+        {items.map((item) => {
           const isActive = location.pathname === item.path;
           return (
             <button
