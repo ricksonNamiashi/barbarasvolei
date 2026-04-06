@@ -138,7 +138,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       if (error) return { error };
 
       if (data.user) {
-        await handleSession(data.user);
+        await handleSession(data.user, true);
       }
 
       return {};
