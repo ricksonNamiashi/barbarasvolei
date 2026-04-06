@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Mail, Lock, User, LogIn, UserPlus, Volleyball } from "lucide-react";
+import { Mail, Lock, User, LogIn, UserPlus, Volleyball, Sun, Moon } from "lucide-react";
+import { useTheme } from "@/contexts/ThemeContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -43,6 +44,7 @@ const Auth = () => {
   const [shakeForm, setShakeForm] = useState(false);
   const { signIn, signUp } = useAuth();
   const { toast } = useToast();
+  const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -81,6 +83,14 @@ const Auth = () => {
 
   return (
     <div className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden bg-background">
+      {/* Theme toggle */}
+      <button
+        onClick={toggleTheme}
+        className="absolute right-4 top-4 z-20 rounded-full border border-border/60 bg-card/80 p-2.5 text-muted-foreground backdrop-blur-sm transition-colors hover:text-foreground"
+        aria-label="Alternar tema"
+      >
+        {theme === "dark" ? <Sun size={18} /> : <Moon size={18} />}
+      </button>
       {/* Animated background elements */}
       <div className="pointer-events-none absolute inset-0">
         {/* Gradient overlay */}
