@@ -104,7 +104,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
           // Use setTimeout to avoid Supabase deadlock
           setTimeout(async () => {
-            await handleSession(session.user);
+            await handleSession(session.user, event === 'SIGNED_IN');
             setLoading(false);
           }, 0);
         }
