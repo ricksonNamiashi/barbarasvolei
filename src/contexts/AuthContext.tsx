@@ -71,7 +71,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     created_at: sessionUser.created_at,
   });
 
-  const handleSession = async (sessionUser: any) => {
+  const handleSession = async (sessionUser: any, shouldRedirect = false) => {
     const userRole = await fetchUserRole(sessionUser.id);
     const prof = await fetchProfile(sessionUser.id);
     const userData = buildUser(sessionUser, userRole);
@@ -80,7 +80,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setProfile(prof);
     setRole(userRole);
 
-    if (userRole === 'admin') {
+    if (shouldRedirect && userRole === 'admin') {
       navigate('/admin', { replace: true });
     }
   };
@@ -104,7 +104,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
           // Use setTimeout to avoid Supabase deadlock
           setTimeout(async () => {
-            await handleSession(session.user);
+            await handleSession(session.user, event === 'SIGNED_IN');
             setLoading(false);
           }, 0);
         }
@@ -138,7 +138,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       if (error) return { error };
 
       if (data.user) {
-        await handleSession(data.user);
+        await handleSession(data.user, true);
       }
 
       return {};
