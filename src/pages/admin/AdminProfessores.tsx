@@ -409,6 +409,7 @@ const AdminProfessores = () => {
                 <ProfessorCard
                   key={p.id}
                   prof={p}
+                  signedPhotoUrl={photoUrls[p.id] ?? null}
                   onEdit={handleEdit}
                   onDelete={(id) => deleteMut.mutate(id)}
                 />
