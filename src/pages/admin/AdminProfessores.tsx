@@ -65,10 +65,12 @@ const toForm = (p: Professor): ProfessorForm => ({
 
 const ProfessorCard = ({
   prof,
+  signedPhotoUrl,
   onEdit,
   onDelete,
 }: {
   prof: Professor;
+  signedPhotoUrl: string | null;
   onEdit: (p: Professor) => void;
   onDelete: (id: string) => void;
 }) => (
@@ -84,7 +86,7 @@ const ProfessorCard = ({
           <GripVertical size={18} />
         </div>
         <Avatar className="h-12 w-12 shrink-0">
-          {prof.photo_url ? <AvatarImage src={prof.photo_url} alt={prof.name} /> : null}
+          {signedPhotoUrl ? <AvatarImage src={signedPhotoUrl} alt={prof.name} /> : null}
           <AvatarFallback className="bg-primary/10 font-display text-sm font-bold text-primary">
             {prof.initials}
           </AvatarFallback>
