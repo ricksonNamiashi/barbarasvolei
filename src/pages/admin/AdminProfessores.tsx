@@ -133,6 +133,7 @@ const ProfessorCard = ({
 
 const AdminProfessores = () => {
   const { data: professors = [], isLoading } = useProfessors();
+  const { data: photoUrls = {} } = useProfessorPhotoUrls(professors);
   const createMut = useCreateProfessor();
   const updateMut = useUpdateProfessor();
   const deleteMut = useDeleteProfessor();
