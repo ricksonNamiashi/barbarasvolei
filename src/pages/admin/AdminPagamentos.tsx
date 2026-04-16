@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { ArrowLeft, Plus, Search, CheckCircle2, Clock, AlertCircle, Trash2, Check, Users, Hourglass } from "lucide-react";
+import { ArrowLeft, Plus, Search, CheckCircle2, Clock, AlertCircle, Trash2, Check, Users, Hourglass, Paperclip } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 import { z } from "zod";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
@@ -117,6 +118,18 @@ const AdminPagamentos = () => {
       toast({ title: "Pagamento removido" });
     } catch {
       toast({ title: "Erro ao remover", variant: "destructive" });
+    }
+  };
+
+  const handleViewReceipt = async (path: string) => {
+    try {
+      const { data, error } = await supabase.storage
+        .from("payment-receipts")
+        .createSignedUrl(path, 60 * 5); // 5 min
+      if (error || !data?.signedUrl) throw error ?? new Error("URL inválida");
+      window.open(data.signedUrl, "_blank", "noopener,noreferrer");
+    } catch {
+      toast({ title: "Não foi possível abrir o comprovante", variant: "destructive" });
     }
   };
 
@@ -363,6 +376,16 @@ const AdminPagamentos = () => {
 
                 {/* Actions */}
                 <div className="mt-2 flex items-center justify-end gap-1 border-t border-border pt-2">
+                  {p.receipt_url && (
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-7 gap-1 text-xs text-primary"
+                      onClick={() => handleViewReceipt(p.receipt_url!)}
+                    >
+                      <Paperclip size={14} /> Comprovante
+                    </Button>
+                  )}
                   {p.status !== "paid" && (
                     confirmPayId === p.id ? (
                       <div className="flex items-center gap-2">
