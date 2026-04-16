@@ -26,7 +26,9 @@ import {
   useUpdateProfessor,
   useDeleteProfessor,
   useReorderProfessors,
+  useProfessorPhotoUrls,
   uploadProfessorPhoto,
+  getProfessorPhotoSignedUrl,
   Professor,
 } from "@/hooks/use-professors";
 import { toast } from "@/hooks/use-toast";
