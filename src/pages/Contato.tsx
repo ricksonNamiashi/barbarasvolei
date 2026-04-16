@@ -1,4 +1,4 @@
-import { Phone, Mail, MessageCircle, MapPin, Clock, ExternalLink } from "lucide-react";
+import { Mail, MessageCircle, MapPin, Clock, ExternalLink } from "lucide-react";
 import { motion } from "framer-motion";
 import Header from "@/components/Header";
 import PageTransition from "@/components/PageTransition";
@@ -11,13 +11,6 @@ const contactMethods = [
     value: "(21) 96621-3552",
     action: "https://wa.me/5521966213552",
     color: "bg-green-50 text-green-600",
-  },
-  {
-    icon: Phone,
-    label: "Telefone",
-    value: "(21) 3333-0000",
-    action: "tel:+552133330000",
-    color: "bg-primary/10 text-primary",
   },
   {
     icon: Mail,
