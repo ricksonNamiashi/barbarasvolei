@@ -127,6 +127,22 @@ const Contato = () => {
               <ExternalLink size={16} className="mt-0.5 text-muted-foreground" />
             </div>
           </motion.a>
+
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.35 }}
+            className="mt-3 overflow-hidden rounded-xl border border-border shadow-card"
+          >
+            <iframe
+              title="Mapa - Escola Santa Bárbara Vila Nova"
+              src="https://www.google.com/maps?q=R.+Domingos+Meireles,+242,+Campo+Grande,+Rio+de+Janeiro+-+RJ,+23070-500&output=embed"
+              loading="lazy"
+              referrerPolicy="no-referrer-when-downgrade"
+              className="h-48 w-full border-0"
+              allowFullScreen
+            />
+          </motion.div>
         </section>
 
         {/* Hours */}
