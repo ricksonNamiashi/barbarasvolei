@@ -172,12 +172,13 @@ const AdminProfessores = () => {
     });
   }, [hasLocalOrder, orderedProfs, reorderMut]);
 
-  const handleEdit = (p: Professor) => {
+  const handleEdit = async (p: Professor) => {
     setEditingId(p.id);
     setForm(toForm(p));
-    setPhotoPreview(p.photo_url || null);
     setPhotoFile(null);
     setIsAdding(false);
+    const signed = await getProfessorPhotoSignedUrl(p.photo_url);
+    setPhotoPreview(signed);
   };
 
   const handleCancel = () => {
