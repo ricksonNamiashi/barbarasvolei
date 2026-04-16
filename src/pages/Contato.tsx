@@ -1,4 +1,4 @@
-import { MessageCircle, MapPin, Clock, ExternalLink } from "lucide-react";
+import { MessageCircle, Instagram, MapPin, Clock, ExternalLink } from "lucide-react";
 import { motion } from "framer-motion";
 import Header from "@/components/Header";
 import PageTransition from "@/components/PageTransition";
@@ -11,6 +11,13 @@ const contactMethods = [
     value: "(21) 96621-3552",
     action: "https://wa.me/5521966213552",
     color: "bg-green-50 text-green-600",
+  },
+  {
+    icon: Instagram,
+    label: "Instagram",
+    value: "@barbarasvolei",
+    action: "https://www.instagram.com/barbarasvolei?igsh=YzJwODI0c3YyZ2dm",
+    color: "bg-pink-50 text-pink-600",
   },
 ];
 
