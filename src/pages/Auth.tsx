@@ -1,3 +1,4 @@
+import { useNavigate } from "react-router-dom";
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Mail, Lock, User, LogIn, UserPlus, Volleyball, Sun, Moon } from "lucide-react";
@@ -44,6 +45,7 @@ const Auth = () => {
   const { signIn, signUp } = useAuth();
   const { toast } = useToast();
   const { theme, toggleTheme } = useTheme();
+  const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -71,6 +73,7 @@ const Auth = () => {
         setTimeout(() => setShakeForm(false), 600);
       } else {
         toast({ title: "Conta criada com sucesso!" });
+        navigate("/");
       }
     }
     setSubmitting(false);
