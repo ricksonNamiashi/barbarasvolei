@@ -9,6 +9,7 @@ export interface AdminPayment {
   due_date: string;
   status: string;
   paid_date: string | null;
+  receipt_url: string | null;
   created_at: string;
   profile_name?: string;
 }
