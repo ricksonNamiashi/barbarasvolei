@@ -1,4 +1,4 @@
-import { Phone, Mail, MessageCircle, MapPin, Clock, ExternalLink } from "lucide-react";
+import { Mail, MessageCircle, MapPin, Clock, ExternalLink } from "lucide-react";
 import { motion } from "framer-motion";
 import Header from "@/components/Header";
 import PageTransition from "@/components/PageTransition";
