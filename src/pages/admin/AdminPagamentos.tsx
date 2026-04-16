@@ -168,6 +168,7 @@ const AdminPagamentos = () => {
 
   const pendingCount = payments.filter((p) => p.status === "pending").length;
   const overdueCount = payments.filter((p) => p.status === "overdue").length;
+  const reviewCount = payments.filter((p) => p.status === "aguardando_confirmacao").length;
 
   // Use all profiles for the individual payment form
   const userOptions = profiles.map((p) => ({ id: p.id, name: p.name }));
@@ -182,6 +183,7 @@ const AdminPagamentos = () => {
           <div className="flex-1">
             <h1 className="font-display text-lg font-bold text-foreground">Pagamentos</h1>
             <p className="text-xs text-muted-foreground">
+              {reviewCount > 0 && <span className="font-semibold text-amber-600">{reviewCount} em análise · </span>}
               {pendingCount} pendente(s) · {overdueCount} atrasado(s)
             </p>
           </div>
