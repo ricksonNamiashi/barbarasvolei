@@ -2,12 +2,13 @@ import { Award, GraduationCap } from "lucide-react";
 import { motion } from "framer-motion";
 import Header from "@/components/Header";
 import PageTransition from "@/components/PageTransition";
-import { useProfessors } from "@/hooks/use-professors";
+import { useProfessors, useProfessorPhotoUrls } from "@/hooks/use-professors";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 
 const Professores = () => {
   const { data: professors = [], isLoading } = useProfessors();
+  const { data: photoUrls = {} } = useProfessorPhotoUrls(professors);
 
   return (
     <PageTransition>
