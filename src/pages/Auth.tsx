@@ -1,5 +1,5 @@
-import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Mail, Lock, User, LogIn, UserPlus, Volleyball, Sun, Moon } from "lucide-react";
 import { useTheme } from "@/contexts/ThemeContext";
@@ -57,8 +57,6 @@ const Auth = () => {
         toast({ title: "Erro ao entrar", description: translateError(error.message), variant: "destructive" });
         setShakeForm(true);
         setTimeout(() => setShakeForm(false), 600);
-      } else {
-        navigate("/");
       }
     } else {
       if (!name.trim()) {
