@@ -99,33 +99,40 @@ const Contato = () => {
           <h3 className="mb-3 font-display text-sm font-bold text-foreground">
             Localização
           </h3>
-          <motion.div
+          <motion.a
+            href="https://www.google.com/maps/search/?api=1&query=R.+Domingos+Meireles+242+Campo+Grande+Rio+de+Janeiro"
+            target="_blank"
+            rel="noopener noreferrer"
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3 }}
-            className="rounded-xl border border-border bg-card p-4 shadow-card"
+            className="block rounded-xl border border-border bg-card p-4 shadow-card transition-transform active:scale-[0.98]"
           >
             <div className="flex items-start gap-3">
               <MapPin size={18} className="mt-0.5 shrink-0 text-primary" />
-              <div>
+              <div className="min-w-0 flex-1">
                 <p className="text-sm font-semibold text-card-foreground">
-                  Ginásio Esportivo ABV
+                  Escola Santa Bárbara — Filial (Vila Nova)
                 </p>
                 <p className="mt-0.5 text-xs text-muted-foreground">
-                  Rua do Vôlei, 123 - Barra da Tijuca
+                  R. Domingos Meireles, 242
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  Rio de Janeiro - RJ, 22000-000
+                  Campo Grande, Rio de Janeiro - RJ
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  CEP 23070-500
                 </p>
               </div>
+              <ExternalLink size={16} className="mt-0.5 text-muted-foreground" />
             </div>
-          </motion.div>
+          </motion.a>
         </section>
 
         {/* Hours */}
         <section>
           <h3 className="mb-3 font-display text-sm font-bold text-foreground">
-            Horário de Funcionamento
+            Dias e Horários de Treino
           </h3>
           <motion.div
             initial={{ opacity: 0, y: 10 }}
@@ -135,24 +142,26 @@ const Contato = () => {
           >
             <div className="flex items-start gap-3">
               <Clock size={18} className="mt-0.5 shrink-0 text-primary" />
-              <div className="space-y-1.5">
-                <div className="flex items-center justify-between gap-8">
-                  <span className="text-xs text-muted-foreground">Seg - Sex</span>
-                  <span className="text-xs font-semibold text-card-foreground">
-                    07:00 - 21:00
-                  </span>
+              <div className="min-w-0 flex-1 space-y-3">
+                <div>
+                  <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                    Segundas e Quartas
+                  </p>
+                  <ul className="mt-1 space-y-0.5 text-xs text-card-foreground">
+                    <li>▫️ 19h00 às 20h00</li>
+                    <li>▫️ 20h00 às 21h00</li>
+                    <li>▫️ 21h00 às 22h00</li>
+                  </ul>
                 </div>
-                <div className="flex items-center justify-between gap-8">
-                  <span className="text-xs text-muted-foreground">Sábado</span>
-                  <span className="text-xs font-semibold text-card-foreground">
-                    08:00 - 12:00
-                  </span>
-                </div>
-                <div className="flex items-center justify-between gap-8">
-                  <span className="text-xs text-muted-foreground">Domingo</span>
-                  <span className="text-xs font-semibold text-card-foreground">
-                    Fechado
-                  </span>
+                <div>
+                  <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                    Sexta-feira
+                  </p>
+                  <ul className="mt-1 space-y-0.5 text-xs text-card-foreground">
+                    <li>▫️ 18h00 às 19h00</li>
+                    <li>▫️ 19h00 às 20h00</li>
+                    <li className="font-semibold text-primary">▫️ 20h00 às 22h00 — Adulto</li>
+                  </ul>
                 </div>
               </div>
             </div>
