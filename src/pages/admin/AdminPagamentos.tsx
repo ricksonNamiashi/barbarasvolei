@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ArrowLeft, Plus, Search, CheckCircle2, Clock, AlertCircle, Trash2, Check, Users } from "lucide-react";
+import { ArrowLeft, Plus, Search, CheckCircle2, Clock, AlertCircle, Trash2, Check, Users, Hourglass } from "lucide-react";
 import { z } from "zod";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
@@ -20,6 +20,7 @@ const statusConfig = {
   paid: { icon: CheckCircle2, label: "Pago", color: "text-green-600", bg: "bg-green-50" },
   pending: { icon: Clock, label: "Pendente", color: "text-primary", bg: "bg-primary/5" },
   overdue: { icon: AlertCircle, label: "Atrasado", color: "text-destructive", bg: "bg-destructive/5" },
+  aguardando_confirmacao: { icon: Hourglass, label: "Em análise", color: "text-amber-600", bg: "bg-amber-50" },
 } as const;
 
 const formatCurrency = (v: number) =>
@@ -167,6 +168,7 @@ const AdminPagamentos = () => {
 
   const pendingCount = payments.filter((p) => p.status === "pending").length;
   const overdueCount = payments.filter((p) => p.status === "overdue").length;
+  const reviewCount = payments.filter((p) => p.status === "aguardando_confirmacao").length;
 
   // Use all profiles for the individual payment form
   const userOptions = profiles.map((p) => ({ id: p.id, name: p.name }));
@@ -181,6 +183,7 @@ const AdminPagamentos = () => {
           <div className="flex-1">
             <h1 className="font-display text-lg font-bold text-foreground">Pagamentos</h1>
             <p className="text-xs text-muted-foreground">
+              {reviewCount > 0 && <span className="font-semibold text-amber-600">{reviewCount} em análise · </span>}
               {pendingCount} pendente(s) · {overdueCount} atrasado(s)
             </p>
           </div>
@@ -312,6 +315,7 @@ const AdminPagamentos = () => {
             <SelectTrigger className="w-[110px]"><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Todos</SelectItem>
+              <SelectItem value="aguardando_confirmacao">Em análise</SelectItem>
               <SelectItem value="pending">Pendente</SelectItem>
               <SelectItem value="paid">Pago</SelectItem>
               <SelectItem value="overdue">Atrasado</SelectItem>
