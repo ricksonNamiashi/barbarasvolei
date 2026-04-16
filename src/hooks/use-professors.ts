@@ -105,6 +105,61 @@ export const uploadProfessorPhoto = async (file: File, professorId: string): Pro
     .upload(path, file, { upsert: true });
   if (error) throw error;
 
-  const { data } = supabase.storage.from("professor-photos").getPublicUrl(path);
-  return data.publicUrl;
+  // Store the storage path (not a URL). Signed URLs are generated on demand for display.
+  return path;
+};
+
+/**
+ * Extract the storage path within the 'professor-photos' bucket from either
+ * a stored path (new format) or a legacy public URL (old format).
+ */
+const extractProfessorPhotoPath = (photoUrlOrPath: string): string | null => {
+  if (!photoUrlOrPath) return null;
+  // Already a path (no scheme)
+  if (!photoUrlOrPath.startsWith("http")) return photoUrlOrPath;
+  // Legacy public URL: .../storage/v1/object/public/professor-photos/<path>
+  const marker = "/professor-photos/";
+  const idx = photoUrlOrPath.indexOf(marker);
+  if (idx === -1) return null;
+  return photoUrlOrPath.slice(idx + marker.length).split("?")[0];
+};
+
+/**
+ * Generate a short-lived signed URL (1 hour) for a professor photo.
+ * Accepts both stored paths and legacy public URLs.
+ */
+export const getProfessorPhotoSignedUrl = async (
+  photoUrlOrPath: string | null
+): Promise<string | null> => {
+  const path = photoUrlOrPath ? extractProfessorPhotoPath(photoUrlOrPath) : null;
+  if (!path) return null;
+  const { data, error } = await supabase.storage
+    .from("professor-photos")
+    .createSignedUrl(path, 60 * 60);
+  if (error || !data?.signedUrl) return null;
+  return data.signedUrl;
+};
+
+/**
+ * Hook that resolves a list of professors' photo_url values to short-lived signed URLs.
+ * Returns a map of professor.id -> signed URL.
+ */
+export const useProfessorPhotoUrls = (professors: Pick<Professor, "id" | "photo_url">[]) => {
+  return useQuery({
+    queryKey: [
+      "professor-photo-signed-urls",
+      professors.map((p) => `${p.id}:${p.photo_url ?? ""}`).join("|"),
+    ],
+    queryFn: async () => {
+      const entries = await Promise.all(
+        professors.map(async (p) => {
+          const url = await getProfessorPhotoSignedUrl(p.photo_url);
+          return [p.id, url] as const;
+        })
+      );
+      return Object.fromEntries(entries) as Record<string, string | null>;
+    },
+    enabled: professors.length > 0,
+    staleTime: 1000 * 60 * 50, // refresh before 1h expiry
+  });
 };

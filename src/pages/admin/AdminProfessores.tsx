@@ -26,7 +26,9 @@ import {
   useUpdateProfessor,
   useDeleteProfessor,
   useReorderProfessors,
+  useProfessorPhotoUrls,
   uploadProfessorPhoto,
+  getProfessorPhotoSignedUrl,
   Professor,
 } from "@/hooks/use-professors";
 import { toast } from "@/hooks/use-toast";
@@ -63,10 +65,12 @@ const toForm = (p: Professor): ProfessorForm => ({
 
 const ProfessorCard = ({
   prof,
+  signedPhotoUrl,
   onEdit,
   onDelete,
 }: {
   prof: Professor;
+  signedPhotoUrl: string | null;
   onEdit: (p: Professor) => void;
   onDelete: (id: string) => void;
 }) => (
@@ -82,7 +86,7 @@ const ProfessorCard = ({
           <GripVertical size={18} />
         </div>
         <Avatar className="h-12 w-12 shrink-0">
-          {prof.photo_url ? <AvatarImage src={prof.photo_url} alt={prof.name} /> : null}
+          {signedPhotoUrl ? <AvatarImage src={signedPhotoUrl} alt={prof.name} /> : null}
           <AvatarFallback className="bg-primary/10 font-display text-sm font-bold text-primary">
             {prof.initials}
           </AvatarFallback>
@@ -129,6 +133,7 @@ const ProfessorCard = ({
 
 const AdminProfessores = () => {
   const { data: professors = [], isLoading } = useProfessors();
+  const { data: photoUrls = {} } = useProfessorPhotoUrls(professors);
   const createMut = useCreateProfessor();
   const updateMut = useUpdateProfessor();
   const deleteMut = useDeleteProfessor();
@@ -167,12 +172,13 @@ const AdminProfessores = () => {
     });
   }, [hasLocalOrder, orderedProfs, reorderMut]);
 
-  const handleEdit = (p: Professor) => {
+  const handleEdit = async (p: Professor) => {
     setEditingId(p.id);
     setForm(toForm(p));
-    setPhotoPreview(p.photo_url || null);
     setPhotoFile(null);
     setIsAdding(false);
+    const signed = await getProfessorPhotoSignedUrl(p.photo_url);
+    setPhotoPreview(signed);
   };
 
   const handleCancel = () => {
@@ -405,6 +411,7 @@ const AdminProfessores = () => {
                 <ProfessorCard
                   key={p.id}
                   prof={p}
+                  signedPhotoUrl={photoUrls[p.id] ?? null}
                   onEdit={handleEdit}
                   onDelete={(id) => deleteMut.mutate(id)}
                 />
