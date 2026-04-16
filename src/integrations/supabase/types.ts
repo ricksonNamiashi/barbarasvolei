@@ -87,6 +87,7 @@ export type Database = {
           id: string
           month: string
           paid_date: string | null
+          receipt_url: string | null
           status: string
           user_id: string
         }
@@ -97,6 +98,7 @@ export type Database = {
           id?: string
           month: string
           paid_date?: string | null
+          receipt_url?: string | null
           status?: string
           user_id: string
         }
@@ -107,6 +109,7 @@ export type Database = {
           id?: string
           month?: string
           paid_date?: string | null
+          receipt_url?: string | null
           status?: string
           user_id?: string
         }
