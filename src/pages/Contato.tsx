@@ -13,13 +13,6 @@ const contactMethods = [
     color: "bg-green-50 text-green-600",
   },
   {
-    icon: Phone,
-    label: "Telefone",
-    value: "(21) 3333-0000",
-    action: "tel:+552133330000",
-    color: "bg-primary/10 text-primary",
-  },
-  {
     icon: Mail,
     label: "E-mail",
     value: "contato@abvvolei.com.br",
