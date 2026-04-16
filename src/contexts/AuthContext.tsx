@@ -25,6 +25,7 @@ interface AuthContextType {
   signIn: (email: string, password: string) => Promise<{ error?: any }>;
   signUp: (email: string, password: string, name: string) => Promise<{ error?: any }>;
   signOut: () => Promise<void>;
+  setDevRole: (role: User['role']) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -33,6 +34,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [role, setRole] = useState<string | null>(null);
+  const [devRoleOverride, setDevRoleOverride] = useState<User['role']>(null);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
   const initialized = useRef(false);
@@ -80,8 +82,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setProfile(prof);
     setRole(userRole);
 
-    if (shouldRedirect && userRole === 'admin') {
-      navigate('/admin', { replace: true });
+    if (shouldRedirect) {
+      navigate(userRole === 'admin' ? '/admin' : '/', { replace: true });
     }
   };
 
@@ -89,20 +91,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     if (initialized.current) return;
     initialized.current = true;
 
-    // Set up listener FIRST (per Supabase best practices)
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         if (event === 'SIGNED_OUT' || !session?.user) {
           setUser(null);
           setProfile(null);
           setRole(null);
+          setDevRoleOverride(null);
           setLoading(false);
           navigate('/auth', { replace: true });
           return;
         }
 
         if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
-          // Use setTimeout to avoid Supabase deadlock
           setTimeout(async () => {
             await handleSession(session.user, event === 'SIGNED_IN');
             setLoading(false);
@@ -111,7 +112,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
     );
 
-    // Then check existing session
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (session?.user) {
         await handleSession(session.user);
@@ -121,7 +121,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setLoading(false);
     });
 
-    // Safety timeout - never stay loading more than 5 seconds
     const timeout = setTimeout(() => {
       setLoading(false);
     }, 5000);
@@ -158,10 +157,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       if (error) return { error };
 
       if (data.user) {
-        // The handle_new_user trigger already creates the role
         const userData = buildUser(data.user, 'aluno');
         setUser(userData);
         setRole('aluno');
+        setDevRoleOverride(null);
       }
 
       return {};
@@ -175,11 +174,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setUser(null);
     setProfile(null);
     setRole(null);
+    setDevRoleOverride(null);
     navigate('/auth', { replace: true });
   };
 
+  const effectiveRole = import.meta.env.DEV && devRoleOverride ? devRoleOverride : role;
+  const effectiveUser = user ? { ...user, role: (effectiveRole as User['role']) ?? null } : null;
+
   return (
-    <AuthContext.Provider value={{ user, profile, role, loading, signIn, signUp, signOut }}>
+    <AuthContext.Provider value={{ user: effectiveUser, profile, role: effectiveRole, loading, signIn, signUp, signOut, setDevRole: setDevRoleOverride }}>
       {children}
     </AuthContext.Provider>
   );
