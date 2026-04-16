@@ -1,4 +1,4 @@
-import { Mail, MessageCircle, MapPin, Clock, ExternalLink } from "lucide-react";
+import { MessageCircle, MapPin, Clock, ExternalLink } from "lucide-react";
 import { motion } from "framer-motion";
 import Header from "@/components/Header";
 import PageTransition from "@/components/PageTransition";
@@ -11,13 +11,6 @@ const contactMethods = [
     value: "(21) 96621-3552",
     action: "https://wa.me/5521966213552",
     color: "bg-green-50 text-green-600",
-  },
-  {
-    icon: Mail,
-    label: "E-mail",
-    value: "contato@abvvolei.com.br",
-    action: "mailto:contato@abvvolei.com.br",
-    color: "bg-accent/10 text-accent-foreground",
   },
 ];
 
