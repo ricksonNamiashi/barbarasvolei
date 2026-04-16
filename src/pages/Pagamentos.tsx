@@ -1,12 +1,14 @@
-import { CheckCircle2, Clock, AlertCircle, CreditCard, QrCode, Loader2 } from "lucide-react";
+import { useState } from "react";
+import { CheckCircle2, Clock, AlertCircle, CreditCard, QrCode, Loader2, Hourglass } from "lucide-react";
 import { motion } from "framer-motion";
 import Header from "@/components/Header";
 import PageTransition from "@/components/PageTransition";
-import { usePayments } from "@/hooks/use-payments";
+import { Button } from "@/components/ui/button";
+import { PixPaymentDialog } from "@/components/PixPaymentDialog";
+import { usePayments, type Payment } from "@/hooks/use-payments";
 import { format, parseISO } from "date-fns";
-import { ptBR } from "date-fns/locale";
 
-type PaymentStatus = "paid" | "pending" | "overdue";
+type PaymentStatus = "paid" | "pending" | "overdue" | "aguardando_confirmacao";
 
 const statusConfig: Record<PaymentStatus, { icon: typeof CheckCircle2; label: string; color: string; bg: string }> = {
   paid: {
@@ -27,6 +29,12 @@ const statusConfig: Record<PaymentStatus, { icon: typeof CheckCircle2; label: st
     color: "text-destructive",
     bg: "bg-destructive/5",
   },
+  aguardando_confirmacao: {
+    icon: Hourglass,
+    label: "Em análise",
+    color: "text-amber-600",
+    bg: "bg-amber-50",
+  },
 };
 
 const formatDate = (dateStr: string) => {
@@ -42,9 +50,16 @@ const formatCurrency = (amount: number) =>
 
 const Pagamentos = () => {
   const { data: payments = [], isLoading } = usePayments();
+  const [pixPayment, setPixPayment] = useState<Payment | null>(null);
+  const [pixOpen, setPixOpen] = useState(false);
 
-  const totalPending = payments.filter((p) => p.status === "pending").length;
-  const currentAmount = payments.length > 0 ? payments[0].amount : 250;
+  const totalPending = payments.filter((p) => p.status === "pending" || p.status === "overdue").length;
+  const currentAmount = payments.length > 0 ? Number(payments[0].amount) : 250;
+
+  const openPix = (payment: Payment) => {
+    setPixPayment(payment);
+    setPixOpen(true);
+  };
 
   return (
     <PageTransition>
@@ -73,25 +88,20 @@ const Pagamentos = () => {
           </div>
         </motion.div>
 
-        {/* Payment Methods */}
+        {/* Payment Method */}
         <section>
           <h3 className="mb-3 font-display text-sm font-bold text-foreground">
-            Formas de Pagamento
+            Forma de Pagamento
           </h3>
-          <div className="grid grid-cols-2 gap-2">
-            <div className="flex items-center gap-2 rounded-xl border border-border bg-card p-3 shadow-card">
+          <div className="flex items-center gap-3 rounded-xl border border-border bg-card p-3 shadow-card">
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
               <QrCode size={20} className="text-primary" />
-              <div>
-                <p className="text-xs font-semibold text-card-foreground">Pix</p>
-                <p className="text-[10px] text-muted-foreground">Instantâneo</p>
-              </div>
             </div>
-            <div className="flex items-center gap-2 rounded-xl border border-border bg-card p-3 shadow-card">
-              <CreditCard size={20} className="text-primary" />
-              <div>
-                <p className="text-xs font-semibold text-card-foreground">Cartão</p>
-                <p className="text-[10px] text-muted-foreground">Crédito/Débito</p>
-              </div>
+            <div className="flex-1">
+              <p className="text-sm font-semibold text-card-foreground">Pix</p>
+              <p className="text-[11px] text-muted-foreground">
+                Pague em segundos pelo app do seu banco
+              </p>
             </div>
           </div>
         </section>
@@ -116,6 +126,7 @@ const Pagamentos = () => {
                 const status = (payment.status as PaymentStatus) || "pending";
                 const config = statusConfig[status] ?? statusConfig.pending;
                 const Icon = config.icon;
+                const canPay = status === "pending" || status === "overdue";
 
                 return (
                   <motion.div
@@ -123,34 +134,49 @@ const Pagamentos = () => {
                     initial={{ opacity: 0, x: -15 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: 0.2 + i * 0.08 }}
-                    className="flex items-center gap-3 rounded-xl border border-border bg-card p-3 shadow-card"
+                    className="rounded-xl border border-border bg-card p-3 shadow-card"
                   >
-                    <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${config.bg}`}>
-                      <Icon size={18} className={config.color} />
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="text-sm font-semibold text-card-foreground">
-                        {payment.month}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        Vencimento: {formatDate(payment.due_date)}
-                      </p>
-                      {payment.paid_date && (
-                        <p className="text-[10px] text-muted-foreground">
-                          Pago em: {formatDate(payment.paid_date)}
+                    <div className="flex items-center gap-3">
+                      <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${config.bg}`}>
+                        <Icon size={18} className={config.color} />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-semibold text-card-foreground">
+                          {payment.month}
                         </p>
-                      )}
+                        <p className="text-xs text-muted-foreground">
+                          Vencimento: {formatDate(payment.due_date)}
+                        </p>
+                        {payment.paid_date && (
+                          <p className="text-[10px] text-muted-foreground">
+                            Pago em: {formatDate(payment.paid_date)}
+                          </p>
+                        )}
+                      </div>
+                      <div className="text-right">
+                        <p className="text-sm font-bold text-card-foreground">
+                          {formatCurrency(Number(payment.amount))}
+                        </p>
+                        <span
+                          className={`inline-block rounded-full px-2 py-0.5 text-[10px] font-semibold ${config.bg} ${config.color}`}
+                        >
+                          {config.label}
+                        </span>
+                      </div>
                     </div>
-                    <div className="text-right">
-                      <p className="text-sm font-bold text-card-foreground">
-                        {formatCurrency(payment.amount)}
-                      </p>
-                      <span
-                        className={`inline-block rounded-full px-2 py-0.5 text-[10px] font-semibold ${config.bg} ${config.color}`}
-                      >
-                        {config.label}
-                      </span>
-                    </div>
+
+                    {canPay && (
+                      <div className="mt-2 border-t border-border pt-2">
+                        <Button
+                          size="sm"
+                          className="w-full gap-2"
+                          onClick={() => openPix(payment)}
+                        >
+                          <QrCode size={16} />
+                          Pagar com Pix
+                        </Button>
+                      </div>
+                    )}
                   </motion.div>
                 );
               })}
@@ -158,6 +184,8 @@ const Pagamentos = () => {
           )}
         </section>
       </main>
+
+      <PixPaymentDialog payment={pixPayment} open={pixOpen} onOpenChange={setPixOpen} />
     </PageTransition>
   );
 };
