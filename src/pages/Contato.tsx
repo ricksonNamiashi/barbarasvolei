@@ -8,8 +8,8 @@ const contactMethods = [
   {
     icon: MessageCircle,
     label: "WhatsApp",
-    value: "(21) 99999-0000",
-    action: "https://wa.me/5521999990000",
+    value: "(21) 96621-3552",
+    action: "https://wa.me/5521966213552",
     color: "bg-green-50 text-green-600",
   },
   {
