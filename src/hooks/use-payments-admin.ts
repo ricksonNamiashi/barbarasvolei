@@ -102,57 +102,62 @@ const friendlyError = (error: unknown, fallback: string): string => {
   return fallback;
 };
 
+// Exported standalone mutation functions so they can be unit-tested without
+// rendering a React component / QueryClientProvider.
+export const createPayment = async (payment: { user_id: string; month: string; amount: number; due_date: string }) => {
+  const adminCheck = await ensureAdmin();
+  if (adminCheck.ok === false) throw new Error(adminCheck.reason);
+  const { error } = await supabase.from("payments").insert(payment);
+  if (error) throw new Error(friendlyError(error, "Erro ao criar mensalidade."));
+};
+
+export const updatePaymentStatus = async ({ id, status, paid_date }: { id: string; status: string; paid_date?: string | null }) => {
+  const adminCheck = await ensureAdmin();
+  if (adminCheck.ok === false) throw new Error(adminCheck.reason);
+  const update: Record<string, unknown> = { status };
+  if (paid_date !== undefined) update.paid_date = paid_date;
+  const { error } = await supabase.from("payments").update(update).eq("id", id);
+  if (error) throw new Error(friendlyError(error, "Erro ao atualizar pagamento."));
+};
+
+export const deletePayment = async (id: string) => {
+  const adminCheck = await ensureAdmin();
+  if (adminCheck.ok === false) throw new Error(adminCheck.reason);
+  const { error } = await supabase.from("payments").delete().eq("id", id);
+  if (error) throw new Error(friendlyError(error, "Erro ao remover pagamento."));
+};
+
+export const bulkCreatePayments = async (params: { userIds: string[]; month: string; amount: number; due_date: string }) => {
+  const adminCheck = await ensureAdmin();
+  if (adminCheck.ok === false) throw new Error(adminCheck.reason);
+  const rows = params.userIds.map((user_id) => ({
+    user_id,
+    month: params.month,
+    amount: params.amount,
+    due_date: params.due_date,
+  }));
+  const { error } = await supabase.from("payments").insert(rows);
+  if (error) throw new Error(friendlyError(error, "Erro ao gerar mensalidades em lote."));
+};
+
+const invalidatePaymentQueries = (qc: ReturnType<typeof useQueryClient>) => {
+  qc.invalidateQueries({ queryKey: ["admin-payments"] });
+  qc.invalidateQueries({ queryKey: ["payments"] });
+};
+
 export const useCreatePayment = () => {
   const qc = useQueryClient();
-  return useMutation({
-    mutationFn: async (payment: { user_id: string; month: string; amount: number; due_date: string }) => {
-      const adminCheck = await ensureAdmin();
-      if (adminCheck.ok === false) throw new Error(adminCheck.reason);
-
-      const { error } = await supabase.from("payments").insert(payment);
-      if (error) throw new Error(friendlyError(error, "Erro ao criar mensalidade."));
-    },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["admin-payments"] });
-      qc.invalidateQueries({ queryKey: ["payments"] });
-    },
-  });
+  return useMutation({ mutationFn: createPayment, onSuccess: () => invalidatePaymentQueries(qc) });
 };
 
 export const useUpdatePaymentStatus = () => {
   const qc = useQueryClient();
-  return useMutation({
-    mutationFn: async ({ id, status, paid_date }: { id: string; status: string; paid_date?: string | null }) => {
-      const adminCheck = await ensureAdmin();
-      if (adminCheck.ok === false) throw new Error(adminCheck.reason);
-
-      const update: Record<string, unknown> = { status };
-      if (paid_date !== undefined) update.paid_date = paid_date;
-      const { error } = await supabase.from("payments").update(update).eq("id", id);
-      if (error) throw new Error(friendlyError(error, "Erro ao atualizar pagamento."));
-    },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["admin-payments"] });
-      qc.invalidateQueries({ queryKey: ["payments"] });
-    },
-  });
+  return useMutation({ mutationFn: updatePaymentStatus, onSuccess: () => invalidatePaymentQueries(qc) });
 };
 
 export const useDeletePayment = () => {
   const qc = useQueryClient();
-  return useMutation({
-    mutationFn: async (id: string) => {
-      const adminCheck = await ensureAdmin();
-      if (adminCheck.ok === false) throw new Error(adminCheck.reason);
-
-      const { error } = await supabase.from("payments").delete().eq("id", id);
-      if (error) throw new Error(friendlyError(error, "Erro ao remover pagamento."));
-    },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["admin-payments"] });
-      qc.invalidateQueries({ queryKey: ["payments"] });
-    },
-  });
+  return useMutation({ mutationFn: deletePayment, onSuccess: () => invalidatePaymentQueries(qc) });
 };
 
 export const useAllProfiles = () => {
