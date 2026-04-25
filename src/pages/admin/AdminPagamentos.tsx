@@ -92,7 +92,7 @@ const AdminPagamentos = () => {
 
     // 2. Pre-flight: confirm current user is really admin in DB
     const adminCheck = await ensureAdmin();
-    if (!adminCheck.ok) {
+    if (adminCheck.ok === false) {
       toast({ title: "Permissão insuficiente", description: adminCheck.reason, variant: "destructive" });
       return;
     }
@@ -194,7 +194,7 @@ const AdminPagamentos = () => {
 
     // 2. Pre-flight: admin permission
     const adminCheck = await ensureAdmin();
-    if (!adminCheck.ok) {
+    if (adminCheck.ok === false) {
       toast({ title: "Permissão insuficiente", description: adminCheck.reason, variant: "destructive" });
       return;
     }
