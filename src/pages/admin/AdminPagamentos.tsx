@@ -78,6 +78,7 @@ const AdminPagamentos = () => {
   };
 
   const handleCreate = async () => {
+    // 1. Validate form schema
     const result = paymentSchema.safeParse({
       user_id: formUserId,
       month: formMonth,
@@ -88,13 +89,43 @@ const AdminPagamentos = () => {
       toast({ title: result.error.issues[0].message, variant: "destructive" });
       return;
     }
+
+    // 2. Pre-flight: confirm current user is really admin in DB
+    const adminCheck = await ensureAdmin();
+    if (!adminCheck.ok) {
+      toast({ title: "Permissão insuficiente", description: adminCheck.reason, variant: "destructive" });
+      return;
+    }
+
+    // 3. Pre-flight: check duplicate (same student + same month)
+    const duplicates = await findDuplicatePayments([result.data.user_id], result.data.month);
+    if (duplicates.length > 0) {
+      const studentName = profiles.find((p) => p.id === result.data.user_id)?.name ?? "este aluno";
+      toast({
+        title: "Mensalidade já existe",
+        description: `${studentName} já possui mensalidade de ${result.data.month}.`,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // 4. Submit
     try {
-      await createMutation.mutateAsync({ user_id: result.data.user_id, month: result.data.month, amount: result.data.amount, due_date: result.data.due_date });
+      await createMutation.mutateAsync({
+        user_id: result.data.user_id,
+        month: result.data.month,
+        amount: result.data.amount,
+        due_date: result.data.due_date,
+      });
       toast({ title: "Mensalidade adicionada!" });
       setFormOpen(false);
       resetForm();
-    } catch {
-      toast({ title: "Erro ao criar mensalidade", variant: "destructive" });
+    } catch (err) {
+      toast({
+        title: "Erro ao criar mensalidade",
+        description: err instanceof Error ? err.message : undefined,
+        variant: "destructive",
+      });
     }
   };
 
@@ -107,8 +138,12 @@ const AdminPagamentos = () => {
       });
       toast({ title: "Pagamento confirmado!" });
       setConfirmPayId(null);
-    } catch {
-      toast({ title: "Erro ao confirmar pagamento", variant: "destructive" });
+    } catch (err) {
+      toast({
+        title: "Erro ao confirmar pagamento",
+        description: err instanceof Error ? err.message : undefined,
+        variant: "destructive",
+      });
     }
   };
 
@@ -116,8 +151,12 @@ const AdminPagamentos = () => {
     try {
       await deleteMutation.mutateAsync(id);
       toast({ title: "Pagamento removido" });
-    } catch {
-      toast({ title: "Erro ao remover", variant: "destructive" });
+    } catch (err) {
+      toast({
+        title: "Erro ao remover",
+        description: err instanceof Error ? err.message : undefined,
+        variant: "destructive",
+      });
     }
   };
 
@@ -141,6 +180,7 @@ const AdminPagamentos = () => {
   };
 
   const handleBulkCreate = async () => {
+    // 1. Validate
     const result = bulkPaymentSchema.safeParse({
       month: bulkMonth,
       amount: Number(bulkAmount),
@@ -151,17 +191,47 @@ const AdminPagamentos = () => {
       toast({ title: result.error.issues[0].message, variant: "destructive" });
       return;
     }
+
+    // 2. Pre-flight: admin permission
+    const adminCheck = await ensureAdmin();
+    if (!adminCheck.ok) {
+      toast({ title: "Permissão insuficiente", description: adminCheck.reason, variant: "destructive" });
+      return;
+    }
+
+    // 3. Pre-flight: filter out students that already have this month
+    const duplicates = await findDuplicatePayments(result.data.userIds, result.data.month);
+    const toCreate = result.data.userIds.filter((id) => !duplicates.includes(id));
+
+    if (toCreate.length === 0) {
+      toast({
+        title: "Nenhuma mensalidade nova para gerar",
+        description: `Todos os ${duplicates.length} aluno(s) selecionados já possuem mensalidade de ${result.data.month}.`,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // 4. Submit only non-duplicates
     try {
       await bulkMutation.mutateAsync({
-        userIds: result.data.userIds,
+        userIds: toCreate,
         month: result.data.month,
         amount: result.data.amount,
         due_date: result.data.due_date,
       });
-      toast({ title: `${result.data.userIds.length} mensalidade(s) gerada(s)!` });
+      const skipped = duplicates.length;
+      toast({
+        title: `${toCreate.length} mensalidade(s) gerada(s)!`,
+        description: skipped > 0 ? `${skipped} aluno(s) já tinham mensalidade deste mês e foram ignorados.` : undefined,
+      });
       setBulkOpen(false);
-    } catch {
-      toast({ title: "Erro ao gerar mensalidades em lote", variant: "destructive" });
+    } catch (err) {
+      toast({
+        title: "Erro ao gerar mensalidades em lote",
+        description: err instanceof Error ? err.message : undefined,
+        variant: "destructive",
+      });
     }
   };
 
