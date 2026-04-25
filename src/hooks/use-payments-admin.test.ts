@@ -146,15 +146,13 @@ describe("findDuplicatePayments", () => {
   });
 });
 
-// ---- friendlyError surfaced via mutationFn ----
-// We invoke mutationFn directly — react-query is not needed for this assertion.
-describe("useCreatePayment.mutationFn — friendly error surfacing", () => {
+// ---- friendlyError surfaced via the mutation worker functions ----
+describe("createPayment — friendly error surfacing", () => {
   const payload = { user_id: "u1", month: "Março 2026", amount: 250, due_date: "2026-03-10" };
 
   it("blocks early with admin-friendly message when the user is not admin", async () => {
     setUserRolesResponse(null);
-    const mutation = useCreatePayment();
-    await expect(mutation.options.mutationFn!(payload)).rejects.toThrow(/permissão de administrador/i);
+    await expect(createPayment(payload)).rejects.toThrow(/permissão de administrador/i);
     // Did not even attempt to insert
     expect(mockState.insertSpy).not.toHaveBeenCalled();
   });
@@ -162,58 +160,52 @@ describe("useCreatePayment.mutationFn — friendly error surfacing", () => {
   it("translates Postgres RLS error (42501) to a friendly toast message", async () => {
     setUserRolesResponse({ role: "admin" });
     setPaymentsInsertResponse({ code: "42501", message: "new row violates row-level security policy" });
-    const mutation = useCreatePayment();
-    await expect(mutation.options.mutationFn!(payload)).rejects.toThrow(/permissão negada pelo banco/i);
+    await expect(createPayment(payload)).rejects.toThrow(/permissão negada pelo banco/i);
   });
 
   it("translates Postgres duplicate key (23505) to a friendly toast message", async () => {
     setUserRolesResponse({ role: "admin" });
     setPaymentsInsertResponse({ code: "23505", message: "duplicate key value violates unique constraint" });
-    const mutation = useCreatePayment();
-    await expect(mutation.options.mutationFn!(payload)).rejects.toThrow(/já existe uma mensalidade/i);
+    await expect(createPayment(payload)).rejects.toThrow(/já existe uma mensalidade/i);
   });
 
   it("falls back to the generic error message for unknown DB errors", async () => {
     setUserRolesResponse({ role: "admin" });
     setPaymentsInsertResponse({ code: "XX000", message: "internal error" });
-    const mutation = useCreatePayment();
-    await expect(mutation.options.mutationFn!(payload)).rejects.toThrow(/erro ao criar mensalidade/i);
+    await expect(createPayment(payload)).rejects.toThrow(/erro ao criar mensalidade/i);
   });
 
   it("succeeds (no throw) when insert resolves cleanly", async () => {
     setUserRolesResponse({ role: "admin" });
     setPaymentsInsertResponse(null);
-    const mutation = useCreatePayment();
-    await expect(mutation.options.mutationFn!(payload)).resolves.toBeUndefined();
+    await expect(createPayment(payload)).resolves.toBeUndefined();
     expect(mockState.insertSpy).toHaveBeenCalledWith("payments", payload);
   });
 });
 
-describe("useBulkCreatePayments.mutationFn — friendly error surfacing", () => {
+describe("bulkCreatePayments — friendly error surfacing", () => {
   const params = { userIds: ["u1", "u2"], month: "Março 2026", amount: 250, due_date: "2026-03-10" };
 
   it("blocks with admin error before touching the DB", async () => {
     setUserRolesResponse(null);
-    const mutation = useBulkCreatePayments();
-    await expect(mutation.options.mutationFn!(params)).rejects.toThrow(/permissão de administrador/i);
+    await expect(bulkCreatePayments(params)).rejects.toThrow(/permissão de administrador/i);
     expect(mockState.insertSpy).not.toHaveBeenCalled();
   });
 
   it("translates RLS errors when bulk inserting", async () => {
     setUserRolesResponse({ role: "admin" });
     setPaymentsInsertResponse({ code: "42501", message: "row-level security" });
-    const mutation = useBulkCreatePayments();
-    await expect(mutation.options.mutationFn!(params)).rejects.toThrow(/permissão negada pelo banco/i);
+    await expect(bulkCreatePayments(params)).rejects.toThrow(/permissão negada pelo banco/i);
   });
 
   it("inserts one row per user_id when admin and DB are healthy", async () => {
     setUserRolesResponse({ role: "admin" });
     setPaymentsInsertResponse(null);
-    const mutation = useBulkCreatePayments();
-    await mutation.options.mutationFn!(params);
+    await bulkCreatePayments(params);
     const [, rows] = mockState.insertSpy.mock.calls[0];
     expect(rows).toHaveLength(2);
     expect(rows[0]).toMatchObject({ user_id: "u1", month: "Março 2026" });
     expect(rows[1]).toMatchObject({ user_id: "u2", month: "Março 2026" });
   });
 });
+
