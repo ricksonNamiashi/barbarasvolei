@@ -100,7 +100,7 @@ describe("ensureAdmin", () => {
     setUserRolesResponse(null);
     const result = await ensureAdmin();
     expect(result.ok).toBe(false);
-    if (!result.ok) {
+    if (result.ok === false) {
       expect(result.reason).toMatch(/permissão de administrador/i);
     }
   });
@@ -109,14 +109,14 @@ describe("ensureAdmin", () => {
     mockState.session = { data: { session: null } };
     const result = await ensureAdmin();
     expect(result.ok).toBe(false);
-    if (!result.ok) expect(result.reason).toMatch(/logado/i);
+    if (result.ok === false) expect(result.reason).toMatch(/logado/i);
   });
 
   it("returns ok=false when the role lookup itself errors", async () => {
     setUserRolesResponse(null, { message: "boom" });
     const result = await ensureAdmin();
     expect(result.ok).toBe(false);
-    if (!result.ok) expect(result.reason).toMatch(/verificar suas permissões/i);
+    if (result.ok === false) expect(result.reason).toMatch(/verificar suas permissões/i);
   });
 });
 
