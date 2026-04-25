@@ -18,12 +18,6 @@ const mockState: {
   updateSpy: vi.fn(),
   deleteSpy: vi.fn(),
 };
-  session: { data: { session: { user: { id: "admin-user-id" } } } },
-  fromHandlers: {},
-  insertSpy: vi.fn(),
-  updateSpy: vi.fn(),
-  deleteSpy: vi.fn(),
-};
 
 const makeSelectChain = (table: string) => {
   // Returns a thenable proxy where every chained method returns itself
