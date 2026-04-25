@@ -66,7 +66,7 @@ vi.mock("@/integrations/supabase/client", () => {
 });
 
 // Import after mocks are registered
-import { ensureAdmin, findDuplicatePayments, useCreatePayment, useBulkCreatePayments } from "./use-payments-admin";
+import { ensureAdmin, findDuplicatePayments, createPayment, bulkCreatePayments } from "./use-payments-admin";
 
 const setUserRolesResponse = (data: unknown, error: unknown = null) => {
   mockState.fromHandlers["user_roles"] = () => ({ data, error });
