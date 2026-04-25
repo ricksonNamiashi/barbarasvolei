@@ -3,16 +3,21 @@ import { describe, it, expect, beforeEach, vi } from "vitest";
 // ---- Supabase mock ----
 // Each test sets `mockState` to control what the chained query builder returns.
 
-type MockResult = { data: unknown; error: unknown };
+type MockResult = { data?: unknown; error?: unknown };
 
 const mockState: {
   session: { data: { session: { user: { id: string } } | null } };
-  // keyed by table name; returns final awaited payload
-  fromHandlers: Record<string, () => Promise<MockResult> | MockResult>;
+  fromHandlers: Record<string, () => MockResult>;
   insertSpy: ReturnType<typeof vi.fn>;
   updateSpy: ReturnType<typeof vi.fn>;
   deleteSpy: ReturnType<typeof vi.fn>;
 } = {
+  session: { data: { session: { user: { id: "admin-user-id" } } } },
+  fromHandlers: {},
+  insertSpy: vi.fn(),
+  updateSpy: vi.fn(),
+  deleteSpy: vi.fn(),
+};
   session: { data: { session: { user: { id: "admin-user-id" } } } },
   fromHandlers: {},
   insertSpy: vi.fn(),
