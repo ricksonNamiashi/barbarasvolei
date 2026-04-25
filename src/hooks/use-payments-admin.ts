@@ -107,7 +107,7 @@ export const useCreatePayment = () => {
   return useMutation({
     mutationFn: async (payment: { user_id: string; month: string; amount: number; due_date: string }) => {
       const adminCheck = await ensureAdmin();
-      if (!adminCheck.ok) throw new Error(adminCheck.reason);
+      if (adminCheck.ok === false) throw new Error(adminCheck.reason);
 
       const { error } = await supabase.from("payments").insert(payment);
       if (error) throw new Error(friendlyError(error, "Erro ao criar mensalidade."));
@@ -124,7 +124,7 @@ export const useUpdatePaymentStatus = () => {
   return useMutation({
     mutationFn: async ({ id, status, paid_date }: { id: string; status: string; paid_date?: string | null }) => {
       const adminCheck = await ensureAdmin();
-      if (!adminCheck.ok) throw new Error(adminCheck.reason);
+      if (adminCheck.ok === false) throw new Error(adminCheck.reason);
 
       const update: Record<string, unknown> = { status };
       if (paid_date !== undefined) update.paid_date = paid_date;
@@ -143,7 +143,7 @@ export const useDeletePayment = () => {
   return useMutation({
     mutationFn: async (id: string) => {
       const adminCheck = await ensureAdmin();
-      if (!adminCheck.ok) throw new Error(adminCheck.reason);
+      if (adminCheck.ok === false) throw new Error(adminCheck.reason);
 
       const { error } = await supabase.from("payments").delete().eq("id", id);
       if (error) throw new Error(friendlyError(error, "Erro ao remover pagamento."));
@@ -174,7 +174,7 @@ export const useBulkCreatePayments = () => {
   return useMutation({
     mutationFn: async (params: { userIds: string[]; month: string; amount: number; due_date: string }) => {
       const adminCheck = await ensureAdmin();
-      if (!adminCheck.ok) throw new Error(adminCheck.reason);
+      if (adminCheck.ok === false) throw new Error(adminCheck.reason);
 
       const rows = params.userIds.map((user_id) => ({
         user_id,
