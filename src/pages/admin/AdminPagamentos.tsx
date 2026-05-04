@@ -478,8 +478,8 @@ const AdminPagamentos = () => {
 
       <main className="space-y-3 px-4 pb-24 pt-4">
         {/* Filters */}
-        <div className="flex gap-2">
-          <div className="relative flex-1">
+        <div className="flex flex-wrap gap-2">
+          <div className="relative flex-1 min-w-[160px]">
             <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
             <Input placeholder="Buscar aluno ou mês..." className="pl-9" value={search} onChange={(e) => setSearch(e.target.value)} />
           </div>
@@ -494,6 +494,44 @@ const AdminPagamentos = () => {
             </SelectContent>
           </Select>
         </div>
+
+        {/* Month filter + Export */}
+        <div className="flex flex-wrap items-center gap-2">
+          <Select value={filterMonth} onValueChange={setFilterMonth}>
+            <SelectTrigger className="flex-1 min-w-[160px]">
+              <SelectValue placeholder="Mês" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos os meses</SelectItem>
+              {availableMonths.map((m) => (
+                <SelectItem key={m} value={m}>{m}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Button
+            size="sm"
+            variant="outline"
+            className="gap-1"
+            onClick={() => handleExport("pdf")}
+            disabled={filtered.length === 0}
+            aria-label="Exportar PDF"
+          >
+            <FileText size={14} /> PDF
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            className="gap-1"
+            onClick={() => handleExport("csv")}
+            disabled={filtered.length === 0}
+            aria-label="Exportar CSV"
+          >
+            <FileDown size={14} /> CSV
+          </Button>
+        </div>
+        <p className="text-[10px] text-muted-foreground">
+          {filtered.length} registro(s) {filterMonth !== "all" && `· ${filterMonth}`}
+        </p>
 
         {isLoading && <p className="py-8 text-center text-sm text-muted-foreground">Carregando...</p>}
 
