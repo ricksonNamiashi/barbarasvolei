@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ArrowLeft, Plus, Search, CheckCircle2, Clock, AlertCircle, Trash2, Check, Users, Hourglass, Paperclip } from "lucide-react";
+import { ArrowLeft, Plus, Search, CheckCircle2, Clock, AlertCircle, Trash2, Check, Users, Hourglass, Paperclip, FileDown, FileText } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { z } from "zod";
 import { motion, AnimatePresence } from "framer-motion";
