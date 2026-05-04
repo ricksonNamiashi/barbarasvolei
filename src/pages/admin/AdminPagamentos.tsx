@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ArrowLeft, Plus, Search, CheckCircle2, Clock, AlertCircle, Trash2, Check, Users, Hourglass, Paperclip } from "lucide-react";
+import { ArrowLeft, Plus, Search, CheckCircle2, Clock, AlertCircle, Trash2, Check, Users, Hourglass, Paperclip, FileDown, FileText } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { z } from "zod";
 import { motion, AnimatePresence } from "framer-motion";
@@ -17,6 +17,7 @@ import { useAllPayments, useCreatePayment, useUpdatePaymentStatus, useDeletePaym
 import { useStudents } from "@/hooks/use-students";
 import { Checkbox } from "@/components/ui/checkbox";
 import { monthFromDueDate, normalizeMonthKey } from "@/lib/month";
+import { exportCSV, exportPDF } from "@/utils/export-financial-report";
 
 const statusConfig = {
   paid: { icon: CheckCircle2, label: "Pago", color: "text-green-600", bg: "bg-green-50" },
@@ -55,6 +56,7 @@ const AdminPagamentos = () => {
 
   const [search, setSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState<string>("all");
+  const [filterMonth, setFilterMonth] = useState<string>("all");
   const [formOpen, setFormOpen] = useState(false);
   const [formUserId, setFormUserId] = useState("");
   const [formMonth, setFormMonth] = useState("");
@@ -285,8 +287,15 @@ const AdminPagamentos = () => {
       p.profile_name?.toLowerCase().includes(search.toLowerCase()) ||
       p.month.toLowerCase().includes(search.toLowerCase());
     const matchStatus = filterStatus === "all" || p.status === filterStatus;
-    return matchSearch && matchStatus;
+    const matchMonth =
+      filterMonth === "all" || normalizeMonthKey(p.month) === normalizeMonthKey(filterMonth);
+    return matchSearch && matchStatus && matchMonth;
   });
+
+  // Lista única de meses presentes no banco — usado no seletor e no export.
+  const availableMonths = Array.from(
+    new Map(payments.map((p) => [normalizeMonthKey(p.month), p.month])).values(),
+  );
 
   const pendingCount = payments.filter((p) => p.status === "pending").length;
   const overdueCount = payments.filter((p) => p.status === "overdue").length;
@@ -294,6 +303,39 @@ const AdminPagamentos = () => {
 
   // Use all profiles for the individual payment form
   const userOptions = profiles.map((p) => ({ id: p.id, name: p.name }));
+
+  const buildExportSummary = (rows: typeof filtered) => {
+    const totalReceived = rows.filter((r) => r.status === "paid").reduce((s, r) => s + Number(r.amount), 0);
+    const totalPending = rows
+      .filter((r) => r.status === "pending" || r.status === "aguardando_confirmacao")
+      .reduce((s, r) => s + Number(r.amount), 0);
+    const overdueTotal = rows.filter((r) => r.status === "overdue").reduce((s, r) => s + Number(r.amount), 0);
+    const total = rows.reduce((s, r) => s + Number(r.amount), 0);
+    const delinquencyRate = total > 0 ? (overdueTotal / total) * 100 : 0;
+    return { totalReceived, totalPending, overdueTotal, delinquencyRate };
+  };
+
+  const handleExport = (kind: "pdf" | "csv") => {
+    if (filtered.length === 0) {
+      toast({ title: "Nada para exportar", description: "Ajuste os filtros e tente novamente.", variant: "destructive" });
+      return;
+    }
+    const rows = filtered.map((p) => ({
+      profile_name: p.profile_name,
+      month: p.month,
+      amount: Number(p.amount),
+      due_date: p.due_date,
+      paid_date: p.paid_date,
+      status: p.status,
+    }));
+    if (kind === "csv") {
+      exportCSV(rows);
+    } else {
+      exportPDF(rows, buildExportSummary(filtered));
+    }
+    const scope = filterMonth === "all" ? "todos os meses" : filterMonth;
+    toast({ title: `Relatório ${kind.toUpperCase()} gerado`, description: `${rows.length} registro(s) — ${scope}.` });
+  };
 
   return (
     <PageTransition>
@@ -436,8 +478,8 @@ const AdminPagamentos = () => {
 
       <main className="space-y-3 px-4 pb-24 pt-4">
         {/* Filters */}
-        <div className="flex gap-2">
-          <div className="relative flex-1">
+        <div className="flex flex-wrap gap-2">
+          <div className="relative flex-1 min-w-[160px]">
             <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
             <Input placeholder="Buscar aluno ou mês..." className="pl-9" value={search} onChange={(e) => setSearch(e.target.value)} />
           </div>
@@ -452,6 +494,44 @@ const AdminPagamentos = () => {
             </SelectContent>
           </Select>
         </div>
+
+        {/* Month filter + Export */}
+        <div className="flex flex-wrap items-center gap-2">
+          <Select value={filterMonth} onValueChange={setFilterMonth}>
+            <SelectTrigger className="flex-1 min-w-[160px]">
+              <SelectValue placeholder="Mês" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos os meses</SelectItem>
+              {availableMonths.map((m) => (
+                <SelectItem key={m} value={m}>{m}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Button
+            size="sm"
+            variant="outline"
+            className="gap-1"
+            onClick={() => handleExport("pdf")}
+            disabled={filtered.length === 0}
+            aria-label="Exportar PDF"
+          >
+            <FileText size={14} /> PDF
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            className="gap-1"
+            onClick={() => handleExport("csv")}
+            disabled={filtered.length === 0}
+            aria-label="Exportar CSV"
+          >
+            <FileDown size={14} /> CSV
+          </Button>
+        </div>
+        <p className="text-[10px] text-muted-foreground">
+          {filtered.length} registro(s) {filterMonth !== "all" && `· ${filterMonth}`}
+        </p>
 
         {isLoading && <p className="py-8 text-center text-sm text-muted-foreground">Carregando...</p>}
 
