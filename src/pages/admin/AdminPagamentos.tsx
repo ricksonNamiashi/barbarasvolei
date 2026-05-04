@@ -322,8 +322,12 @@ const AdminPagamentos = () => {
                 </DialogHeader>
                 <div className="space-y-4 py-2">
                   <div className="space-y-2">
-                    <Label>Mês de Referência</Label>
-                    <Input placeholder="Ex: Março 2026" value={bulkMonth} onChange={(e) => setBulkMonth(e.target.value)} />
+                    <Label>Mês de Referência <span className="text-[10px] text-muted-foreground">(opcional — derivado do vencimento)</span></Label>
+                    <Input
+                      placeholder={monthFromDueDate(bulkDueDate) ?? "Ex: Março 2026"}
+                      value={bulkMonth}
+                      onChange={(e) => setBulkMonth(e.target.value)}
+                    />
                   </div>
                   <div className="space-y-2">
                     <Label>Valor (R$)</Label>
