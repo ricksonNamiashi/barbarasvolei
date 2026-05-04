@@ -79,10 +79,32 @@ const AdminPagamentos = () => {
   };
 
   const handleCreate = async () => {
+    // 0. Pré-cálculo do mês-alvo a partir da data de vencimento, no fuso da
+    //    escola — evita o bug clássico em que `new Date("2026-03-01")` é
+    //    interpretado como UTC e cai em fevereiro no horário de Brasília.
+    const derivedMonth = monthFromDueDate(formDueDate);
+    if (!derivedMonth) {
+      toast({ title: "Data de vencimento inválida", variant: "destructive" });
+      return;
+    }
+    // Se o admin digitou um mês manualmente que NÃO bate com o vencimento,
+    // bloqueamos para evitar inconsistência (ex.: vencimento em março
+    // marcado como "Abril 2026" por engano de digitação).
+    const typedMonth = formMonth.trim();
+    if (typedMonth && normalizeMonthKey(typedMonth) !== normalizeMonthKey(derivedMonth)) {
+      toast({
+        title: "Mês não confere com o vencimento",
+        description: `O vencimento informado pertence a ${derivedMonth}. Ajuste o mês ou o vencimento.`,
+        variant: "destructive",
+      });
+      return;
+    }
+    const monthToUse = derivedMonth; // sempre canônico
+
     // 1. Validate form schema
     const result = paymentSchema.safeParse({
       user_id: formUserId,
-      month: formMonth,
+      month: monthToUse,
       amount: Number(formAmount),
       due_date: formDueDate,
     });
@@ -98,7 +120,7 @@ const AdminPagamentos = () => {
       return;
     }
 
-    // 3. Pre-flight: check duplicate (same student + same month)
+    // 3. Pre-flight: check duplicate (same student + same month, normalizado)
     const duplicates = await findDuplicatePayments([result.data.user_id], result.data.month);
     if (duplicates.length > 0) {
       const studentName = profiles.find((p) => p.id === result.data.user_id)?.name ?? "este aluno";
