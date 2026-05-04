@@ -56,6 +56,7 @@ const AdminPagamentos = () => {
 
   const [search, setSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState<string>("all");
+  const [filterMonth, setFilterMonth] = useState<string>("all");
   const [formOpen, setFormOpen] = useState(false);
   const [formUserId, setFormUserId] = useState("");
   const [formMonth, setFormMonth] = useState("");
