@@ -16,6 +16,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useAllPayments, useCreatePayment, useUpdatePaymentStatus, useDeletePayment, useAllProfiles, useBulkCreatePayments, ensureAdmin, findDuplicatePayments } from "@/hooks/use-payments-admin";
 import { useStudents } from "@/hooks/use-students";
 import { Checkbox } from "@/components/ui/checkbox";
+import { monthFromDueDate, normalizeMonthKey } from "@/lib/month";
 
 const statusConfig = {
   paid: { icon: CheckCircle2, label: "Pago", color: "text-green-600", bg: "bg-green-50" },
