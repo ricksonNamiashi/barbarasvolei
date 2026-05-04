@@ -287,8 +287,15 @@ const AdminPagamentos = () => {
       p.profile_name?.toLowerCase().includes(search.toLowerCase()) ||
       p.month.toLowerCase().includes(search.toLowerCase());
     const matchStatus = filterStatus === "all" || p.status === filterStatus;
-    return matchSearch && matchStatus;
+    const matchMonth =
+      filterMonth === "all" || normalizeMonthKey(p.month) === normalizeMonthKey(filterMonth);
+    return matchSearch && matchStatus && matchMonth;
   });
+
+  // Lista única de meses presentes no banco — usado no seletor e no export.
+  const availableMonths = Array.from(
+    new Map(payments.map((p) => [normalizeMonthKey(p.month), p.month])).values(),
+  );
 
   const pendingCount = payments.filter((p) => p.status === "pending").length;
   const overdueCount = payments.filter((p) => p.status === "overdue").length;
@@ -296,6 +303,39 @@ const AdminPagamentos = () => {
 
   // Use all profiles for the individual payment form
   const userOptions = profiles.map((p) => ({ id: p.id, name: p.name }));
+
+  const buildExportSummary = (rows: typeof filtered) => {
+    const totalReceived = rows.filter((r) => r.status === "paid").reduce((s, r) => s + Number(r.amount), 0);
+    const totalPending = rows
+      .filter((r) => r.status === "pending" || r.status === "aguardando_confirmacao")
+      .reduce((s, r) => s + Number(r.amount), 0);
+    const overdueTotal = rows.filter((r) => r.status === "overdue").reduce((s, r) => s + Number(r.amount), 0);
+    const total = rows.reduce((s, r) => s + Number(r.amount), 0);
+    const delinquencyRate = total > 0 ? (overdueTotal / total) * 100 : 0;
+    return { totalReceived, totalPending, overdueTotal, delinquencyRate };
+  };
+
+  const handleExport = (kind: "pdf" | "csv") => {
+    if (filtered.length === 0) {
+      toast({ title: "Nada para exportar", description: "Ajuste os filtros e tente novamente.", variant: "destructive" });
+      return;
+    }
+    const rows = filtered.map((p) => ({
+      profile_name: p.profile_name,
+      month: p.month,
+      amount: Number(p.amount),
+      due_date: p.due_date,
+      paid_date: p.paid_date,
+      status: p.status,
+    }));
+    if (kind === "csv") {
+      exportCSV(rows);
+    } else {
+      exportPDF(rows, buildExportSummary(filtered));
+    }
+    const scope = filterMonth === "all" ? "todos os meses" : filterMonth;
+    toast({ title: `Relatório ${kind.toUpperCase()} gerado`, description: `${rows.length} registro(s) — ${scope}.` });
+  };
 
   return (
     <PageTransition>
