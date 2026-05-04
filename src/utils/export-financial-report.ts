@@ -14,6 +14,7 @@ const statusLabel: Record<string, string> = {
   paid: "Pago",
   pending: "Pendente",
   overdue: "Atrasado",
+  aguardando_confirmacao: "Em análise",
 };
 
 const formatCurrency = (v: number) =>
