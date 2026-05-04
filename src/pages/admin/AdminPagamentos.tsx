@@ -16,6 +16,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useAllPayments, useCreatePayment, useUpdatePaymentStatus, useDeletePayment, useAllProfiles, useBulkCreatePayments, ensureAdmin, findDuplicatePayments } from "@/hooks/use-payments-admin";
 import { useStudents } from "@/hooks/use-students";
 import { Checkbox } from "@/components/ui/checkbox";
+import { monthFromDueDate, normalizeMonthKey } from "@/lib/month";
 
 const statusConfig = {
   paid: { icon: CheckCircle2, label: "Pago", color: "text-green-600", bg: "bg-green-50" },
@@ -78,10 +79,32 @@ const AdminPagamentos = () => {
   };
 
   const handleCreate = async () => {
+    // 0. Pré-cálculo do mês-alvo a partir da data de vencimento, no fuso da
+    //    escola — evita o bug clássico em que `new Date("2026-03-01")` é
+    //    interpretado como UTC e cai em fevereiro no horário de Brasília.
+    const derivedMonth = monthFromDueDate(formDueDate);
+    if (!derivedMonth) {
+      toast({ title: "Data de vencimento inválida", variant: "destructive" });
+      return;
+    }
+    // Se o admin digitou um mês manualmente que NÃO bate com o vencimento,
+    // bloqueamos para evitar inconsistência (ex.: vencimento em março
+    // marcado como "Abril 2026" por engano de digitação).
+    const typedMonth = formMonth.trim();
+    if (typedMonth && normalizeMonthKey(typedMonth) !== normalizeMonthKey(derivedMonth)) {
+      toast({
+        title: "Mês não confere com o vencimento",
+        description: `O vencimento informado pertence a ${derivedMonth}. Ajuste o mês ou o vencimento.`,
+        variant: "destructive",
+      });
+      return;
+    }
+    const monthToUse = derivedMonth; // sempre canônico
+
     // 1. Validate form schema
     const result = paymentSchema.safeParse({
       user_id: formUserId,
-      month: formMonth,
+      month: monthToUse,
       amount: Number(formAmount),
       due_date: formDueDate,
     });
@@ -97,7 +120,7 @@ const AdminPagamentos = () => {
       return;
     }
 
-    // 3. Pre-flight: check duplicate (same student + same month)
+    // 3. Pre-flight: check duplicate (same student + same month, normalizado)
     const duplicates = await findDuplicatePayments([result.data.user_id], result.data.month);
     if (duplicates.length > 0) {
       const studentName = profiles.find((p) => p.id === result.data.user_id)?.name ?? "este aluno";
@@ -180,9 +203,25 @@ const AdminPagamentos = () => {
   };
 
   const handleBulkCreate = async () => {
+    // 0. Mês canônico derivado do vencimento (timezone-safe).
+    const derivedMonth = monthFromDueDate(bulkDueDate);
+    if (!derivedMonth) {
+      toast({ title: "Data de vencimento inválida", variant: "destructive" });
+      return;
+    }
+    const typedMonth = bulkMonth.trim();
+    if (typedMonth && normalizeMonthKey(typedMonth) !== normalizeMonthKey(derivedMonth)) {
+      toast({
+        title: "Mês não confere com o vencimento",
+        description: `O vencimento informado pertence a ${derivedMonth}. Ajuste o mês ou o vencimento.`,
+        variant: "destructive",
+      });
+      return;
+    }
+
     // 1. Validate
     const result = bulkPaymentSchema.safeParse({
-      month: bulkMonth,
+      month: derivedMonth,
       amount: Number(bulkAmount),
       due_date: bulkDueDate,
       userIds: bulkSelectedIds,
@@ -283,8 +322,12 @@ const AdminPagamentos = () => {
                 </DialogHeader>
                 <div className="space-y-4 py-2">
                   <div className="space-y-2">
-                    <Label>Mês de Referência</Label>
-                    <Input placeholder="Ex: Março 2026" value={bulkMonth} onChange={(e) => setBulkMonth(e.target.value)} />
+                    <Label>Mês de Referência <span className="text-[10px] text-muted-foreground">(opcional — derivado do vencimento)</span></Label>
+                    <Input
+                      placeholder={monthFromDueDate(bulkDueDate) ?? "Ex: Março 2026"}
+                      value={bulkMonth}
+                      onChange={(e) => setBulkMonth(e.target.value)}
+                    />
                   </div>
                   <div className="space-y-2">
                     <Label>Valor (R$)</Label>
@@ -365,8 +408,12 @@ const AdminPagamentos = () => {
                   )}
                 </div>
                 <div className="space-y-2">
-                  <Label>Mês de Referência</Label>
-                  <Input placeholder="Ex: Março 2026" value={formMonth} onChange={(e) => setFormMonth(e.target.value)} />
+                  <Label>Mês de Referência <span className="text-[10px] text-muted-foreground">(opcional — derivado do vencimento)</span></Label>
+                  <Input
+                    placeholder={monthFromDueDate(formDueDate) ?? "Ex: Março 2026"}
+                    value={formMonth}
+                    onChange={(e) => setFormMonth(e.target.value)}
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label>Valor (R$)</Label>

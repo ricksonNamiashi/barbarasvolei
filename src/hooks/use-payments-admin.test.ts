@@ -123,7 +123,10 @@ describe("ensureAdmin", () => {
 // ---- findDuplicatePayments ----
 describe("findDuplicatePayments", () => {
   it("returns the user_ids that already have a payment for the given month", async () => {
-    setPaymentsSelectResponse([{ user_id: "u1" }, { user_id: "u3" }]);
+    setPaymentsSelectResponse([
+      { user_id: "u1", month: "Março 2026" },
+      { user_id: "u3", month: "Março 2026" },
+    ]);
     const dups = await findDuplicatePayments(["u1", "u2", "u3"], "Março 2026");
     expect(dups).toEqual(["u1", "u3"]);
   });
@@ -143,6 +146,16 @@ describe("findDuplicatePayments", () => {
     setPaymentsSelectResponse([]);
     const dups = await findDuplicatePayments(["u1", "u2"], "Abril 2026");
     expect(dups).toEqual([]);
+  });
+
+  it("matches duplicates ignoring case and accents (Março ≡ marco ≡ MARÇO)", async () => {
+    setPaymentsSelectResponse([
+      { user_id: "u1", month: "marco 2026" },
+      { user_id: "u2", month: "MARÇO 2026" },
+      { user_id: "u3", month: "Abril 2026" },
+    ]);
+    const dups = await findDuplicatePayments(["u1", "u2", "u3"], "Março 2026");
+    expect(dups.sort()).toEqual(["u1", "u2"]);
   });
 });
 

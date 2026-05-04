@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { normalizeMonthKey } from "@/lib/month";
 
 export interface AdminPayment {
   id: string;
@@ -55,13 +56,19 @@ export const findDuplicatePayments = async (
   month: string,
 ): Promise<string[]> => {
   if (userIds.length === 0) return [];
+  // Buscamos TODOS os meses cadastrados desses alunos e comparamos com chave
+  // normalizada (sem acentos/caixa) — assim "Março 2026", "marco 2026" e
+  // "MARÇO 2026" são detectados como o mesmo mês e evitamos duplicatas
+  // criadas por digitação inconsistente.
   const { data, error } = await supabase
     .from("payments")
-    .select("user_id")
-    .eq("month", month)
+    .select("user_id, month")
     .in("user_id", userIds);
   if (error) return [];
-  return (data ?? []).map((r) => r.user_id);
+  const target = normalizeMonthKey(month);
+  return (data ?? [])
+    .filter((r) => normalizeMonthKey(r.month) === target)
+    .map((r) => r.user_id);
 };
 
 export const useAllPayments = () => {
