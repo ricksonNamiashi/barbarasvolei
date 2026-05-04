@@ -203,9 +203,25 @@ const AdminPagamentos = () => {
   };
 
   const handleBulkCreate = async () => {
+    // 0. Mês canônico derivado do vencimento (timezone-safe).
+    const derivedMonth = monthFromDueDate(bulkDueDate);
+    if (!derivedMonth) {
+      toast({ title: "Data de vencimento inválida", variant: "destructive" });
+      return;
+    }
+    const typedMonth = bulkMonth.trim();
+    if (typedMonth && normalizeMonthKey(typedMonth) !== normalizeMonthKey(derivedMonth)) {
+      toast({
+        title: "Mês não confere com o vencimento",
+        description: `O vencimento informado pertence a ${derivedMonth}. Ajuste o mês ou o vencimento.`,
+        variant: "destructive",
+      });
+      return;
+    }
+
     // 1. Validate
     const result = bulkPaymentSchema.safeParse({
-      month: bulkMonth,
+      month: derivedMonth,
       amount: Number(bulkAmount),
       due_date: bulkDueDate,
       userIds: bulkSelectedIds,
