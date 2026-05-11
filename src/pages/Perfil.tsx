@@ -1,12 +1,13 @@
-import { User, Calendar, Trophy, Clock, LogOut } from "lucide-react";
+import { Calendar, Trophy, Clock, LogOut } from "lucide-react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import Header from "@/components/Header";
 import PageTransition from "@/components/PageTransition";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
+import { useStudents } from "@/hooks/use-students";
 
 const roleLabels: Record<string, string> = {
   admin: "Administrador",
@@ -26,6 +27,10 @@ const trainingHistory = [
 const Perfil = () => {
   const navigate = useNavigate();
   const { profile, role, user, signOut } = useAuth();
+  const { data: allStudents = [] } = useStudents();
+  const myStudents = role === "responsavel" && profile?.name
+    ? allStudents.filter((s) => s.responsible === profile.name)
+    : [];
 
   const displayName = profile?.name || user?.email || "Usuário";
   const initials = displayName.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase();
@@ -97,6 +102,39 @@ const Perfil = () => {
             </span>
           </motion.div>
         </div>
+
+        {role === "responsavel" && myStudents.length > 0 && (
+          <section>
+            <h3 className="mb-3 font-display text-base font-bold text-foreground">
+              {myStudents.length === 1 ? "Meu aluno" : "Meus alunos"}
+            </h3>
+            <div className="space-y-2">
+              {myStudents.map((s, i) => (
+                <motion.div
+                  key={s.id}
+                  initial={{ opacity: 0, x: -15 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.2 + i * 0.05 }}
+                  className="flex items-center gap-3 rounded-xl border border-border bg-card p-3 shadow-card"
+                >
+                  <Avatar className="h-12 w-12">
+                    {s.photo_url && <AvatarImage src={s.photo_url} alt={s.name} />}
+                    <AvatarFallback className="bg-primary/10 text-sm font-bold text-primary">
+                      {s.name.split(" ").map((n) => n[0]).join("").slice(0, 2)}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-card-foreground truncate">{s.name}</p>
+                    <div className="flex items-center gap-2">
+                      <Badge variant="secondary" className="text-[10px]">{s.category}</Badge>
+                      <span className="text-[10px] text-muted-foreground">{s.age} anos</span>
+                    </div>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          </section>
+        )}
 
         {/* Training History */}
         <section>

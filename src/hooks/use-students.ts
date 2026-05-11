@@ -8,7 +8,10 @@ export interface Student {
   category: string;
   responsible: string;
   status: string;
+  photo_url: string | null;
 }
+
+type StudentInput = { name: string; age: number; category: string; responsible: string; photo_url?: string | null };
 
 export const useStudents = () => {
   return useQuery({
@@ -27,7 +30,7 @@ export const useStudents = () => {
 export const useCreateStudent = () => {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (student: { name: string; age: number; category: string; responsible: string }) => {
+    mutationFn: async (student: StudentInput) => {
       const { error } = await supabase.from("students").insert(student);
       if (error) throw error;
     },
@@ -38,7 +41,7 @@ export const useCreateStudent = () => {
 export const useUpdateStudent = () => {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async ({ id, ...data }: { id: string; name: string; age: number; category: string; responsible: string }) => {
+    mutationFn: async ({ id, ...data }: { id: string } & StudentInput) => {
       const { error } = await supabase.from("students").update(data).eq("id", id);
       if (error) throw error;
     },
@@ -55,4 +58,16 @@ export const useDeleteStudent = () => {
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["students"] }),
   });
+};
+
+export const uploadStudentPhoto = async (studentId: string, file: File): Promise<string> => {
+  const ext = file.name.split(".").pop()?.toLowerCase() || "jpg";
+  const path = `${studentId}/${Date.now()}.${ext}`;
+  const { error } = await supabase.storage.from("student-photos").upload(path, file, {
+    upsert: true,
+    contentType: file.type,
+  });
+  if (error) throw error;
+  const { data } = supabase.storage.from("student-photos").getPublicUrl(path);
+  return data.publicUrl;
 };

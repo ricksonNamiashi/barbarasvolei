@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { ArrowLeft, Plus, Pencil, Trash2, Search } from "lucide-react";
+import { useRef, useState } from "react";
+import { ArrowLeft, Plus, Pencil, Trash2, Search, Camera } from "lucide-react";
 import { z } from "zod";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
@@ -10,9 +10,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogClose } from "@/components/ui/dialog";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/use-toast";
-import { useStudents, useCreateStudent, useUpdateStudent, useDeleteStudent, type Student } from "@/hooks/use-students";
+import { useStudents, useCreateStudent, useUpdateStudent, useDeleteStudent, uploadStudentPhoto, type Student } from "@/hooks/use-students";
+import { useQueryClient } from "@tanstack/react-query";
 
 const categories = ["Sub-11", "Sub-13", "Sub-15", "Sub-17", "Adulto"] as const;
 
@@ -26,6 +27,7 @@ const studentSchema = z.object({
 const AdminAlunos = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const qc = useQueryClient();
   const { data: students = [], isLoading } = useStudents();
   const createMutation = useCreateStudent();
   const updateMutation = useUpdateStudent();
@@ -38,11 +40,32 @@ const AdminAlunos = () => {
   const [formAge, setFormAge] = useState("");
   const [formCategory, setFormCategory] = useState("");
   const [formResponsible, setFormResponsible] = useState("");
+  const [formPhotoUrl, setFormPhotoUrl] = useState<string | null>(null);
+  const [photoFile, setPhotoFile] = useState<File | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const photoInputRef = useRef<HTMLInputElement>(null);
 
-  const resetForm = () => { setFormName(""); setFormAge(""); setFormCategory(""); setFormResponsible(""); setEditItem(null); };
+  const resetForm = () => {
+    setFormName(""); setFormAge(""); setFormCategory(""); setFormResponsible("");
+    setFormPhotoUrl(null); setPhotoFile(null); setEditItem(null);
+  };
   const openNew = () => { resetForm(); setFormOpen(true); };
   const openEdit = (s: Student) => {
-    setEditItem(s); setFormName(s.name); setFormAge(String(s.age)); setFormCategory(s.category); setFormResponsible(s.responsible); setFormOpen(true);
+    setEditItem(s); setFormName(s.name); setFormAge(String(s.age)); setFormCategory(s.category);
+    setFormResponsible(s.responsible); setFormPhotoUrl(s.photo_url); setPhotoFile(null); setFormOpen(true);
+  };
+
+  const handlePhotoPick = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      toast({ title: "Selecione uma imagem válida", variant: "destructive" }); return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      toast({ title: "Imagem muito grande (máx 5MB)", variant: "destructive" }); return;
+    }
+    setPhotoFile(file);
+    setFormPhotoUrl(URL.createObjectURL(file));
   };
 
   const handleSave = async () => {
@@ -57,15 +80,31 @@ const AdminAlunos = () => {
     }
     const { name, age, category, responsible } = result.data;
     try {
+      setUploading(true);
+      let photo_url = editItem?.photo_url ?? null;
       if (editItem) {
-        await updateMutation.mutateAsync({ id: editItem.id, name, age, category, responsible });
+        await updateMutation.mutateAsync({ id: editItem.id, name, age, category, responsible, photo_url });
+        if (photoFile) {
+          photo_url = await uploadStudentPhoto(editItem.id, photoFile);
+          await updateMutation.mutateAsync({ id: editItem.id, name, age, category, responsible, photo_url });
+        }
         toast({ title: "Aluno atualizado!" });
       } else {
-        await createMutation.mutateAsync({ name, age, category, responsible });
+        const { supabase } = await import("@/integrations/supabase/client");
+        const { data, error } = await supabase
+          .from("students").insert({ name, age, category, responsible }).select("id").single();
+        if (error) throw error;
+        if (photoFile && data?.id) {
+          photo_url = await uploadStudentPhoto(data.id, photoFile);
+          await updateMutation.mutateAsync({ id: data.id, name, age, category, responsible, photo_url });
+        } else {
+          qc.invalidateQueries({ queryKey: ["students"] });
+        }
         toast({ title: "Aluno cadastrado!" });
       }
       setFormOpen(false); resetForm();
     } catch { toast({ title: "Erro ao salvar", variant: "destructive" }); }
+    finally { setUploading(false); }
   };
 
   const handleDelete = async (id: string) => {
@@ -95,6 +134,31 @@ const AdminAlunos = () => {
             <DialogContent className="max-w-[360px]">
               <DialogHeader><DialogTitle>{editItem ? "Editar Aluno" : "Novo Aluno"}</DialogTitle></DialogHeader>
               <div className="space-y-4 py-2">
+                <div className="flex flex-col items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => photoInputRef.current?.click()}
+                    className="group relative"
+                  >
+                    <Avatar className="h-20 w-20 ring-2 ring-border">
+                      {formPhotoUrl && <AvatarImage src={formPhotoUrl} alt="Foto do aluno" />}
+                      <AvatarFallback className="bg-primary/10 text-lg font-bold text-primary">
+                        {formName ? formName.split(" ").map((n) => n[0]).join("").slice(0, 2) : "?"}
+                      </AvatarFallback>
+                    </Avatar>
+                    <span className="absolute bottom-0 right-0 flex h-7 w-7 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-md ring-2 ring-card">
+                      <Camera size={14} />
+                    </span>
+                  </button>
+                  <input
+                    ref={photoInputRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handlePhotoPick}
+                  />
+                  <p className="text-[10px] text-muted-foreground">Toque para {formPhotoUrl ? "trocar" : "adicionar"} foto</p>
+                </div>
                 <div className="space-y-2"><Label>Nome</Label><Input placeholder="Nome completo" value={formName} onChange={(e) => setFormName(e.target.value)} /></div>
                 <div className="space-y-2"><Label>Idade</Label><Input type="number" placeholder="Idade" value={formAge} onChange={(e) => setFormAge(e.target.value)} /></div>
                 <div className="space-y-2">
@@ -107,8 +171,8 @@ const AdminAlunos = () => {
                 <div className="space-y-2"><Label>Responsável</Label><Input placeholder="Nome do responsável" value={formResponsible} onChange={(e) => setFormResponsible(e.target.value)} /></div>
               </div>
               <DialogFooter>
-                <DialogClose asChild><Button variant="outline" size="sm">Cancelar</Button></DialogClose>
-                <Button size="sm" onClick={handleSave}>Salvar</Button>
+                <DialogClose asChild><Button variant="outline" size="sm" disabled={uploading}>Cancelar</Button></DialogClose>
+                <Button size="sm" onClick={handleSave} disabled={uploading}>{uploading ? "Salvando..." : "Salvar"}</Button>
               </DialogFooter>
             </DialogContent>
           </Dialog>
@@ -127,6 +191,7 @@ const AdminAlunos = () => {
           {filtered.map((s, i) => (
             <motion.div key={s.id} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 10 }} transition={{ delay: i * 0.03 }} className="flex items-center gap-3 rounded-xl border border-border bg-card p-3 shadow-card">
               <Avatar className="h-10 w-10">
+                {s.photo_url && <AvatarImage src={s.photo_url} alt={s.name} />}
                 <AvatarFallback className="bg-primary/10 text-xs font-bold text-primary">
                   {s.name.split(" ").map((n) => n[0]).join("")}
                 </AvatarFallback>
