@@ -134,6 +134,31 @@ const AdminAlunos = () => {
             <DialogContent className="max-w-[360px]">
               <DialogHeader><DialogTitle>{editItem ? "Editar Aluno" : "Novo Aluno"}</DialogTitle></DialogHeader>
               <div className="space-y-4 py-2">
+                <div className="flex flex-col items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => photoInputRef.current?.click()}
+                    className="group relative"
+                  >
+                    <Avatar className="h-20 w-20 ring-2 ring-border">
+                      {formPhotoUrl && <AvatarImage src={formPhotoUrl} alt="Foto do aluno" />}
+                      <AvatarFallback className="bg-primary/10 text-lg font-bold text-primary">
+                        {formName ? formName.split(" ").map((n) => n[0]).join("").slice(0, 2) : "?"}
+                      </AvatarFallback>
+                    </Avatar>
+                    <span className="absolute bottom-0 right-0 flex h-7 w-7 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-md ring-2 ring-card">
+                      <Camera size={14} />
+                    </span>
+                  </button>
+                  <input
+                    ref={photoInputRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handlePhotoPick}
+                  />
+                  <p className="text-[10px] text-muted-foreground">Toque para {formPhotoUrl ? "trocar" : "adicionar"} foto</p>
+                </div>
                 <div className="space-y-2"><Label>Nome</Label><Input placeholder="Nome completo" value={formName} onChange={(e) => setFormName(e.target.value)} /></div>
                 <div className="space-y-2"><Label>Idade</Label><Input type="number" placeholder="Idade" value={formAge} onChange={(e) => setFormAge(e.target.value)} /></div>
                 <div className="space-y-2">
@@ -146,8 +171,8 @@ const AdminAlunos = () => {
                 <div className="space-y-2"><Label>Responsável</Label><Input placeholder="Nome do responsável" value={formResponsible} onChange={(e) => setFormResponsible(e.target.value)} /></div>
               </div>
               <DialogFooter>
-                <DialogClose asChild><Button variant="outline" size="sm">Cancelar</Button></DialogClose>
-                <Button size="sm" onClick={handleSave}>Salvar</Button>
+                <DialogClose asChild><Button variant="outline" size="sm" disabled={uploading}>Cancelar</Button></DialogClose>
+                <Button size="sm" onClick={handleSave} disabled={uploading}>{uploading ? "Salvando..." : "Salvar"}</Button>
               </DialogFooter>
             </DialogContent>
           </Dialog>
