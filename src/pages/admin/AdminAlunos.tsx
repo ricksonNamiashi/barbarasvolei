@@ -88,15 +88,14 @@ const AdminAlunos = () => {
         }
         toast({ title: "Aluno atualizado!" });
       } else {
-        // Create first to get id, then upload photo if provided
-        const { data, error } = await (await import("@/integrations/supabase/client")).supabase
+        const { supabase } = await import("@/integrations/supabase/client");
+        const { data, error } = await supabase
           .from("students").insert({ name, age, category, responsible }).select("id").single();
         if (error) throw error;
         if (photoFile && data?.id) {
           photo_url = await uploadStudentPhoto(data.id, photoFile);
           await updateMutation.mutateAsync({ id: data.id, name, age, category, responsible, photo_url });
         }
-        await createMutation.mutateAsync.constructor; // no-op to keep ts happy if removed
         toast({ title: "Aluno cadastrado!" });
       }
       setFormOpen(false); resetForm();
