@@ -38,11 +38,32 @@ const AdminAlunos = () => {
   const [formAge, setFormAge] = useState("");
   const [formCategory, setFormCategory] = useState("");
   const [formResponsible, setFormResponsible] = useState("");
+  const [formPhotoUrl, setFormPhotoUrl] = useState<string | null>(null);
+  const [photoFile, setPhotoFile] = useState<File | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const photoInputRef = useRef<HTMLInputElement>(null);
 
-  const resetForm = () => { setFormName(""); setFormAge(""); setFormCategory(""); setFormResponsible(""); setEditItem(null); };
+  const resetForm = () => {
+    setFormName(""); setFormAge(""); setFormCategory(""); setFormResponsible("");
+    setFormPhotoUrl(null); setPhotoFile(null); setEditItem(null);
+  };
   const openNew = () => { resetForm(); setFormOpen(true); };
   const openEdit = (s: Student) => {
-    setEditItem(s); setFormName(s.name); setFormAge(String(s.age)); setFormCategory(s.category); setFormResponsible(s.responsible); setFormOpen(true);
+    setEditItem(s); setFormName(s.name); setFormAge(String(s.age)); setFormCategory(s.category);
+    setFormResponsible(s.responsible); setFormPhotoUrl(s.photo_url); setPhotoFile(null); setFormOpen(true);
+  };
+
+  const handlePhotoPick = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      toast({ title: "Selecione uma imagem válida", variant: "destructive" }); return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      toast({ title: "Imagem muito grande (máx 5MB)", variant: "destructive" }); return;
+    }
+    setPhotoFile(file);
+    setFormPhotoUrl(URL.createObjectURL(file));
   };
 
   const handleSave = async () => {
@@ -57,15 +78,30 @@ const AdminAlunos = () => {
     }
     const { name, age, category, responsible } = result.data;
     try {
+      setUploading(true);
+      let photo_url = editItem?.photo_url ?? null;
       if (editItem) {
-        await updateMutation.mutateAsync({ id: editItem.id, name, age, category, responsible });
+        await updateMutation.mutateAsync({ id: editItem.id, name, age, category, responsible, photo_url });
+        if (photoFile) {
+          photo_url = await uploadStudentPhoto(editItem.id, photoFile);
+          await updateMutation.mutateAsync({ id: editItem.id, name, age, category, responsible, photo_url });
+        }
         toast({ title: "Aluno atualizado!" });
       } else {
-        await createMutation.mutateAsync({ name, age, category, responsible });
+        // Create first to get id, then upload photo if provided
+        const { data, error } = await (await import("@/integrations/supabase/client")).supabase
+          .from("students").insert({ name, age, category, responsible }).select("id").single();
+        if (error) throw error;
+        if (photoFile && data?.id) {
+          photo_url = await uploadStudentPhoto(data.id, photoFile);
+          await updateMutation.mutateAsync({ id: data.id, name, age, category, responsible, photo_url });
+        }
+        await createMutation.mutateAsync.constructor; // no-op to keep ts happy if removed
         toast({ title: "Aluno cadastrado!" });
       }
       setFormOpen(false); resetForm();
     } catch { toast({ title: "Erro ao salvar", variant: "destructive" }); }
+    finally { setUploading(false); }
   };
 
   const handleDelete = async (id: string) => {
