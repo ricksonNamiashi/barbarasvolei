@@ -26,6 +26,7 @@ const studentSchema = z.object({
 const AdminAlunos = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const qc = useQueryClient();
   const { data: students = [], isLoading } = useStudents();
   const createMutation = useCreateStudent();
   const updateMutation = useUpdateStudent();
