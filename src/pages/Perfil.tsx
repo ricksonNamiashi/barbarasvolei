@@ -1,12 +1,13 @@
-import { User, Calendar, Trophy, Clock, LogOut } from "lucide-react";
+import { Calendar, Trophy, Clock, LogOut } from "lucide-react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import Header from "@/components/Header";
 import PageTransition from "@/components/PageTransition";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
+import { useStudents } from "@/hooks/use-students";
 
 const roleLabels: Record<string, string> = {
   admin: "Administrador",
