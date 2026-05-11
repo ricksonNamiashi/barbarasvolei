@@ -191,6 +191,7 @@ const AdminAlunos = () => {
           {filtered.map((s, i) => (
             <motion.div key={s.id} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 10 }} transition={{ delay: i * 0.03 }} className="flex items-center gap-3 rounded-xl border border-border bg-card p-3 shadow-card">
               <Avatar className="h-10 w-10">
+                {s.photo_url && <AvatarImage src={s.photo_url} alt={s.name} />}
                 <AvatarFallback className="bg-primary/10 text-xs font-bold text-primary">
                   {s.name.split(" ").map((n) => n[0]).join("")}
                 </AvatarFallback>
