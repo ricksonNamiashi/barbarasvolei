@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { ArrowLeft, Plus, Pencil, Trash2, Search } from "lucide-react";
+import { useRef, useState } from "react";
+import { ArrowLeft, Plus, Pencil, Trash2, Search, Camera } from "lucide-react";
 import { z } from "zod";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
@@ -10,9 +10,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogClose } from "@/components/ui/dialog";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/use-toast";
-import { useStudents, useCreateStudent, useUpdateStudent, useDeleteStudent, type Student } from "@/hooks/use-students";
+import { useStudents, useCreateStudent, useUpdateStudent, useDeleteStudent, uploadStudentPhoto, type Student } from "@/hooks/use-students";
 
 const categories = ["Sub-11", "Sub-13", "Sub-15", "Sub-17", "Adulto"] as const;
 
