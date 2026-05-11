@@ -13,6 +13,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/use-toast";
 import { useStudents, useCreateStudent, useUpdateStudent, useDeleteStudent, uploadStudentPhoto, type Student } from "@/hooks/use-students";
+import { useQueryClient } from "@tanstack/react-query";
 
 const categories = ["Sub-11", "Sub-13", "Sub-15", "Sub-17", "Adulto"] as const;
 
