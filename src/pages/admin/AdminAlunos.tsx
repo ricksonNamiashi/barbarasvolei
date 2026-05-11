@@ -96,7 +96,7 @@ const AdminAlunos = () => {
           photo_url = await uploadStudentPhoto(data.id, photoFile);
           await updateMutation.mutateAsync({ id: data.id, name, age, category, responsible, photo_url });
         } else {
-          await createMutation.mutateAsync({ name, age, category, responsible }).catch(() => {});
+          qc.invalidateQueries({ queryKey: ["students"] });
         }
         toast({ title: "Aluno cadastrado!" });
       }
