@@ -27,6 +27,10 @@ const trainingHistory = [
 const Perfil = () => {
   const navigate = useNavigate();
   const { profile, role, user, signOut } = useAuth();
+  const { data: allStudents = [] } = useStudents();
+  const myStudents = role === "responsavel" && profile?.name
+    ? allStudents.filter((s) => s.responsible === profile.name)
+    : [];
 
   const displayName = profile?.name || user?.email || "Usuário";
   const initials = displayName.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase();
